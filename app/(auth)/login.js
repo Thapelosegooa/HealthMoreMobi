@@ -49,7 +49,7 @@ export default function Login() {
       Alert.alert("Success", "Logged in!");
 
       // navigate to home screen
-      router.replace("/home");
+      router.replace("/(tabs)/home");
 
     } catch (err) {
       console.log(err);
