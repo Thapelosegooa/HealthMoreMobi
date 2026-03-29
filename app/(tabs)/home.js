@@ -1,8 +1,9 @@
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
-import { ImageBackground, Text, TouchableOpacity, View } from "react-native";
+import { ImageBackground, Text, TouchableOpacity, View, ScrollView } from "react-native";
 import { BASE_URL } from "../../config/api";
 import { getToken } from "../../utils/getToken";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 export default function Home() {
   const router = useRouter();
@@ -68,7 +69,13 @@ export default function Home() {
       style={styles.background}
       resizeMode="cover"
     >
+      <ScrollView style={styles.test}>
+      <View style={styles.heading}>
+        <Text style={styles.header}>Home</Text>
+      </View>
+      
       <View style={styles.container}>
+        
         {/* calorie ring */}
         <View style={styles.circleContainer}>
           <TouchableOpacity
@@ -98,16 +105,57 @@ export default function Home() {
               </Text>
             </View>
           </TouchableOpacity>
+
+          
           <TouchableOpacity
             onPress={() => router.push("/(tabs)/weight")}
             style={styles.weightCard}
           >
-            <View style={styles.weightRow}>
-              <Text style={styles.weightLabel}>Body Fat%</Text>
+             <View style={styles.weightRow}>
+                <Text style={styles.weightLabel}>Body Fat Percentage</Text>
+
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={30}
+                  color="#1DB954"
+                />
             </View>
           </TouchableOpacity>
+
+
+          {/*bmi and calories calculator*/}
+          <View style={styles.row}>
+          
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/converter")}
+            style={styles.smallCard}
+          >
+            
+            <MaterialCommunityIcons
+              name="swap-horizontal"
+              size={50}
+              color="#1DB954"
+            />
+            <Text style={styles.smallCardTitle}>Kcal Converter</Text>
+          </TouchableOpacity>
+
+         
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/bmi")}
+            style={styles.smallCard}
+          >
+            
+            <MaterialCommunityIcons
+              name="scale-bathroom"
+              size={50}
+              color="#1DB954"
+            />
+            <Text style={styles.smallCardTitle}>Calculate BMI</Text>
+          </TouchableOpacity>
+        </View>
         </View>
       </View>
+      </ScrollView>
     </ImageBackground>
   );
 }
@@ -116,6 +164,16 @@ const styles = {
   background: {
     flex: 1,
   },
+  heading: {
+    paddingHorizontal: 20,
+    marginTop: 65,
+  },
+  header: {
+    textAlign: 'left',
+    color: "#000000", 
+    fontSize: 30, 
+    fontWeight: "bold"
+  },
   container: {
     flex: 1,
     //backgroundColor: "#ffffff",
@@ -123,7 +181,12 @@ const styles = {
   },
   circleContainer: {
     alignItems: "center",
-    marginTop: 80,
+    marginTop: 20,
+    shadowColor: "#000000",
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.15,
+  shadowRadius: 6,
+    
   },
   circle: {
     width: 240,
@@ -170,7 +233,10 @@ const styles = {
     justifyContent: "center",
     borderRadius: 20,
     marginTop: 15,
-    //alignItems: "center",
+   shadowColor: "#00000070",
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.15,
+  shadowRadius: 6,
   },
   weightRow: {
     flexDirection: "row",
@@ -179,4 +245,32 @@ const styles = {
   },
   weightLabel: { color: "#000000", fontSize: 20, fontWeight: "bold" },
   weightValue: { color: "#000000", fontSize: 20, fontWeight: "bold" },
+  ///////////////////////////
+
+  row: {
+  flexDirection: "row",
+  marginTop: 20,
+  gap: 10,
+},
+
+smallCard: {
+  flex: 1,
+  backgroundColor: "#ffffff",
+  paddingVertical: 30,
+  borderRadius: 15,
+  alignItems: "center",
+  justifyContent: "center",
+  shadowColor: "#00000070",
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.15,
+  shadowRadius: 6,
+},
+
+smallCardTitle: {
+  color: "#000000",
+  fontSize: 16,
+  fontWeight: "bold",
+  
+},
+
 };

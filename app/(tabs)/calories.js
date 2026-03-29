@@ -128,8 +128,13 @@ export default function Calories() {
           style={styles.background}
           resizeMode="cover"
         >
+          
     <ScrollView style={styles.container}>
       {/*calories left card */}
+      <View style={styles.heading}>
+                  <Text style={styles.header}>Calorie Logger</Text>
+                </View>
+
 
       <View style={styles.calCard}>
       <TouchableOpacity
@@ -235,6 +240,16 @@ const styles = StyleSheet.create({
   background: {
     flex: 1,
   },
+  heading: {
+    paddingHorizontal: 0,
+    marginTop: 50,
+  },
+  header: {
+    textAlign: 'left',
+    color: "#000000", 
+    fontSize: 30, 
+    fontWeight: "bold"
+  },
   container: { 
     flex: 1, 
     padding: 20, 
@@ -269,11 +284,15 @@ const styles = StyleSheet.create({
     color: "#000",
   },
   calCard: {
-    marginTop:50,
+    marginTop:20,
     justifyContent: "center",
     padding: 10,
     borderRadius: 20,
     backgroundColor: "rgb(255, 255, 255)", 
+    shadowColor: "#00000070",
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.15,
+  shadowRadius: 6,
 },
   sectionTitle: { color: "#000000", fontSize: 18, marginVertical: 15 },
   chartCard: {
@@ -281,6 +300,10 @@ const styles = StyleSheet.create({
     marginTop: 30,
     padding: 10,
     borderRadius: 20,
+    shadowColor: "#00000070",
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.15,
+  shadowRadius: 6,
     
     backgroundColor: "rgb(255, 255, 255)", 
 },
