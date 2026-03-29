@@ -6,7 +6,7 @@ import {
   Modal,
   ScrollView,
   StyleSheet,
-  Alert,
+  Alert, ImageBackground
 } from "react-native";
 import { useEffect, useState } from "react";
 import { BASE_URL } from "../../config/api";
@@ -123,8 +123,15 @@ export default function Calories() {
   const left = data.dailyLimit - data.consumed;
 
   return (
+    <ImageBackground
+          source={require("../../assets/images/gradbackground.png")}
+          style={styles.background}
+          resizeMode="cover"
+        >
     <ScrollView style={styles.container}>
       {/*calories left card */}
+
+      <View style={styles.calCard}>
       <TouchableOpacity
         onPress={() => setModalVisible(true)}
         style={styles.card}
@@ -186,41 +193,58 @@ export default function Calories() {
         <Text style={styles.buttonText}>Clear Day Intake</Text>
       </TouchableOpacity>
 
+      </View>
+
       {/* calorie chart */}
       {weeklyData.data && (
-        <View style={{ marginTop: 30 }}>
+        <View style={styles.chartCard}>
           <Text style={styles.sectionTitle}>Weekly Calories</Text>
           <BarChart
-            data={{
-              labels: weeklyData.labels,
-              datasets: [{ data: weeklyData.data }],
-            }}
-            width={screenWidth}
-            height={220}
-            yAxisLabel=""
-            chartConfig={{
-              backgroundGradientFrom: "#121212",
-              backgroundGradientTo: "#121212",
-              decimalPlaces: 0,
-              color: (opacity = 1) => `rgba(29, 185, 84, ${opacity})`,
-              labelColor: (opacity = 1) => `rgba(255,255,255,${opacity})`,
-              style: { borderRadius: 16 },
-            }}
-            style={{ borderRadius: 16 }}
-          />
+          data={{
+            labels: weeklyData.labels,
+            datasets: [{ data: weeklyData.data }],
+          }}
+          width={screenWidth - 30}
+          height={280}
+          yAxisLabel=""
+          showValuesOnTopOfBars={true}
+          chartConfig={{
+            backgroundGradientFrom: "#ffffff",
+            backgroundGradientTo: "#ffffff",
+            fillShadowGradient: "#1DB954",
+            fillShadowGradientOpacity: 1,
+            decimalPlaces: 0,
+            color: (opacity = 1) => `rgba(29, 185, 84, ${opacity})`, 
+            labelColor: (opacity = 1) => `rgba(0,0,0,${opacity})`, 
+            propsForBackgroundLines: {
+            stroke: "rgba(0, 0, 0, 0.1)", 
+            },
+          }}
+          style={{
+            borderRadius: 16,paddingRight: 1
+          }}
+        />
         </View>
       )}
     </ScrollView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#ffffff" },
+  background: {
+    flex: 1,
+  },
+  container: { 
+    flex: 1, 
+    padding: 20, 
+   // backgroundColor: "#ffffff" 
+  },
   card: {
     backgroundColor: "#1e1e1e",
     padding: 20,
     borderRadius: 15,
-    marginTop:50,
+    marginTop:20,
     marginBottom: 20,
     alignItems: "center",
   },
@@ -244,5 +268,22 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     color: "#000",
   },
+  calCard: {
+    marginTop:50,
+    justifyContent: "center",
+    padding: 10,
+    borderRadius: 20,
+    backgroundColor: "rgb(255, 255, 255)", 
+},
   sectionTitle: { color: "#000000", fontSize: 18, marginVertical: 15 },
+  chartCard: {
+    justifyContent: "center",
+    marginTop: 30,
+    padding: 10,
+    borderRadius: 20,
+    
+    backgroundColor: "rgb(255, 255, 255)", 
+},
+
+
 });

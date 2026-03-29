@@ -49,7 +49,7 @@ export default function BottomNav() {
             <Ionicons
               name={isActive ? tab.activeIcon : tab.icon}
               size={isActive ? 30 : 24} 
-              color={isActive ? "#489be9" : "#6d6d6d"} 
+              color={isActive ? "#1DB954" : "#6d6d6d"} 
             />
           </Pressable>
         );

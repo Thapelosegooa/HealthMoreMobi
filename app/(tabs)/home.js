@@ -1,12 +1,13 @@
-import { View, Text, TouchableOpacity } from "react-native";
-import { useState, useCallback } from "react";
-import { useRouter, useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
+import { ImageBackground, Text, TouchableOpacity, View } from "react-native";
 import { BASE_URL } from "../../config/api";
 import { getToken } from "../../utils/getToken";
 
 export default function Home() {
   const router = useRouter();
   const [calories, setCalories] = useState(null);
+  const [weight, setWeight] = useState(null);
 
   const fetchCalories = async () => {
     try {
@@ -25,11 +26,30 @@ export default function Home() {
     }
   };
 
+  //fetch weight details
+  const fetchWeight = async () => {
+    try {
+      const token = await getToken();
+
+      const res = await fetch(`${BASE_URL}/api/weight`, {
+        headers: {
+          "x-auth-token": token,
+        },
+      });
+
+      const data = await res.json();
+      setWeight(data.weight);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
   // read calories api
   useFocusEffect(
     useCallback(() => {
       fetchCalories();
-    }, [])
+      fetchWeight();
+    }, []),
   );
 
   const caloriesLeft = calories
@@ -43,75 +63,120 @@ export default function Home() {
   });
 
   return (
-    <View style={styles.container}>
-      {/* calorie ring */}
-      <View style={styles.circleContainer}>
-        <TouchableOpacity
-          onPress={() => router.push("/(tabs)/calories")}
-          style={styles.circle}
-        >
-          <Text style={styles.caloriesNumber}>{caloriesLeft}</Text>
-          <Text style={styles.caloriesUnit}>kcal</Text>
-          <Text style={styles.caloriesLeft}>Left</Text>
-        </TouchableOpacity>
+    <ImageBackground
+      source={require("../../assets/images/gradbackground.png")}
+      style={styles.background}
+      resizeMode="cover"
+    >
+      <View style={styles.container}>
+        {/* calorie ring */}
+        <View style={styles.circleContainer}>
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/calories")}
+            style={styles.circle}
+          >
+            <Text style={styles.caloriesNumber}>{caloriesLeft}</Text>
+            <Text style={styles.caloriesUnit}>kcal</Text>
+            <Text style={styles.caloriesLeft}>Left</Text>
+          </TouchableOpacity>
 
-        {/* day */}
-        <Text style={styles.dayLabel}>{today}</Text>
-      </View>
+          {/* day */}
+          <Text style={styles.dayLabel}>{today}</Text>
+        </View>
 
-      {/* Other content below circle */}
-      <View style={styles.otherContent}>
-        <Text style={{ color: "#000000", fontSize: 16 }}>
-          {/* Add more cards or components here */}
-          Other health info here
-        </Text>
+        {/* weight card */}
+        <View style={styles.otherContent}>
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/weight")}
+            style={styles.weightCard}
+          >
+            <View style={styles.weightRow}>
+              <Text style={styles.weightLabel}>Current Weight:</Text>
+
+              <Text style={styles.weightValue}>
+                {weight ? `${weight} kg` : "--"}
+              </Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/weight")}
+            style={styles.weightCard}
+          >
+            <View style={styles.weightRow}>
+              <Text style={styles.weightLabel}>Body Fat%</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </ImageBackground>
   );
 }
 
 const styles = {
+  background: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    //backgroundColor: "#ffffff",
     alignItems: "center",
   },
   circleContainer: {
     alignItems: "center",
-    marginTop: 80, 
+    marginTop: 80,
   },
   circle: {
-    width: 260,
-    height: 260,
-    borderRadius: 130,
+    width: 240,
+    height: 240,
+    borderRadius: 120,
     borderWidth: 6,
     borderColor: "#1DB954",
-    backgroundColor: "#1e1e1e",
+    backgroundColor: "#ffffff",
     alignItems: "center",
     justifyContent: "center",
   },
   caloriesNumber: {
-    color: "#fff",
+    color: "#000000",
     fontSize: 36,
     fontWeight: "bold",
   },
   caloriesUnit: {
     color: "#aaa",
     fontSize: 16,
+    fontWeight: "bold",
   },
   caloriesLeft: {
     color: "#1DB954",
     fontSize: 16,
     marginTop: 4,
+    fontWeight: "bold",
   },
   dayLabel: {
-    color: "#aaa",
+    color: "#505050",
     fontSize: 18,
     marginTop: 12,
   },
   otherContent: {
-    marginTop: 40, 
+    marginTop: 10,
     width: "100%",
     paddingHorizontal: 20,
+    alignItems: "center",
   },
+  weightCard: {
+    width: 360,
+    height: 70,
+    padding: 15,
+    backgroundColor: "#ffffff",
+    justifyContent: "center",
+    borderRadius: 20,
+    marginTop: 15,
+    //alignItems: "center",
+  },
+  weightRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 100,
+  },
+  weightLabel: { color: "#000000", fontSize: 20, fontWeight: "bold" },
+  weightValue: { color: "#000000", fontSize: 20, fontWeight: "bold" },
 };
