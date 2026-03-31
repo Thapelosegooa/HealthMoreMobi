@@ -108,7 +108,7 @@ export default function Home() {
 
           
           <TouchableOpacity
-            onPress={() => router.push("/(tabs)/weight")}
+            onPress={() => router.push("/(tabs)/bodyweight")}
             style={styles.weightCard}
           >
              <View style={styles.weightRow}>
