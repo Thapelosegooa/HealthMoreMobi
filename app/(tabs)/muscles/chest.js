@@ -1,51 +1,51 @@
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
   Image,
-  ScrollView,
   ImageBackground,
   Linking,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 
-export default function Biceps() {
+export default function Chestg() {
   const router = useRouter();
 
   const workouts = [
     {
-      name: "Z-Bar Curls",
-      image: require("../../../assets/workouts/biceps/bic1.png"),
-      reps: "3 sets x 12 reps",
-      equipment: "Dumbbells",
-      level: "Beginner",
-      video: "https://youtu.be/d2r5TCqnR4Y?si=DCNRelAjETgMeiqr",
-    },
-    {
-      name: "Skull Crushers",
-      image: require("../../../assets/workouts/biceps/bic2.png"),
-      reps: "3 sets x 12 reps",
-      equipment: "Dumbbells",
-      level: "Intermediate",
-      video: "https://youtu.be/S0fmDR60X-o?si=87_okS9j5WUExNf-",
-    },
-    {
-      name: "Standing Tricep Press",
-      image: require("../../../assets/workouts/biceps/bic3.png"),
+      name: "Flat Bench Press",
+      image: require("../../../assets/workouts/chest/chest1.png"),
       reps: "3 sets x 10 reps",
-      equipment: "Dumbbells",
+      equipment: "Barbells",
       level: "Intermediate",
-      video: "https://youtu.be/-Vyt2QdsR7E?si=vfHEUTDVq_ubHjca",
+      video: "https://www.youtube.com/watch?v=lAMfO-Yrf_I",
     },
     {
-      name: "Seated Incline Curls",
-      image: require("../../../assets/workouts/biceps/bic4.png"),
+      name: "Inclined Press",
+      image: require("../../../assets/workouts/chest/chest2.png"),
       reps: "3 sets x 10 reps",
       equipment: "Dumbbells",
       level: "Hard",
-      video: "https://youtu.be/XhIsIcjIbCw?si=M0G1BafmuM6v7BB_",
+      video: "https://www.youtube.com/watch?v=oZVCBM9f8Eo",
+    },
+    {
+      name: "Decline Press",
+      image: require("../../../assets/workouts/chest/chest3.png"),
+      reps: "3 sets x 10 reps",
+      equipment: "Dumbbells",
+      level: "Intermediate",
+      video: "https://www.youtube.com/watch?v=vTXZEwGb3xM",
+    },
+    {
+      name: "Cable pec Flys",
+      image: require("../../../assets/workouts/chest/chest4.png"),
+      reps: "3 sets x 15 reps",
+      equipment: "Cable machine",
+      level: "Beginner",
+      video: "https://www.youtube.com/watch?v=mLgYNdxj-Vw",
     },
   ];
 
@@ -60,20 +60,17 @@ export default function Biceps() {
       resizeMode="cover"
     >
       <ScrollView contentContainerStyle={styles.container}>
-        
-    
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={26} color="#000" />
           </TouchableOpacity>
 
-          <Text style={styles.title}>Biceps</Text>
+          <Text style={styles.title}>Chest</Text>
         </View>
 
         {/* Workouts */}
         {workouts.map((item, index) => (
           <View key={index} style={styles.card}>
-            
             <Image source={item.image} style={styles.image} />
 
             <Text style={styles.name}>{item.name}</Text>
@@ -102,7 +99,6 @@ export default function Biceps() {
               <Ionicons name="play" size={18} color="#fff" />
               <Text style={styles.playText}>Watch</Text>
             </TouchableOpacity>
-
           </View>
         ))}
       </ScrollView>

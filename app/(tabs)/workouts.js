@@ -61,7 +61,7 @@ export default function Workouts() {
 
           <TouchableOpacity
             style={styles.card}
-            onPress={() => router.push("/muscles/shoulders")}
+            onPress={() => router.push("/(tabs)/muscles/shoulders")}
           >
             <Image
               source={require("../../assets/workouts/shoulders/shoulderlogo.png")}
@@ -75,7 +75,7 @@ export default function Workouts() {
         <View style={styles.row}>
           <TouchableOpacity
             style={styles.card}
-            onPress={() => router.push("/muscles/quads")}
+            onPress={() => router.push("/(tabs)/muscles/quads")}
           >
             <Image
               source={require("../../assets/workouts/quads/quadlogo.png")}
@@ -86,7 +86,7 @@ export default function Workouts() {
 
           <TouchableOpacity
             style={styles.card}
-            onPress={() => router.push("/muscles/calves")}
+            onPress={() => router.push("/(tabs)/muscles/calves")}
           >
             <Image
               source={require("../../assets/workouts/calves/calvelogo.png")}
