@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import * as SecureStore from "expo-secure-store";
 import { BASE_URL } from "../../config/api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   ImageBackground,
   Pressable,
@@ -45,6 +46,8 @@ export default function Login() {
 
       // Save token
       await SecureStore.setItemAsync("token", data.token);
+
+      await AsyncStorage.setItem("user", JSON.stringify(data.user));
 
       Alert.alert("Success", "Logged in!");
 
