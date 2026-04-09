@@ -1,15 +1,16 @@
-import React, { useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as ImagePicker from "expo-image-picker";
+import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import {
-  View,
+  Alert,
+  Image,
+  ImageBackground,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  Alert,
-  Image,ImageBackground,
-  StyleSheet,
+  View,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
-import * as ImagePicker from "expo-image-picker";
 
 export default function Profile() {
   const router = useRouter();
@@ -88,80 +89,74 @@ export default function Profile() {
   };
 
   return (
-
     <ImageBackground
-          source={require("../../assets/images/gradbackground.png")}
-          style={styles.background}
-          resizeMode="cover"
+      source={require("../../assets/images/gradbackground.png")}
+      style={styles.background}
+      resizeMode="cover"
+    >
+      <View style={styles.container}>
+        <Text style={styles.title}>Profile</Text>
+
+        <View style={styles.profile}>
+          {/* Profile Image */}
+          <TouchableOpacity onPress={pickImage}>
+            <Image
+              source={
+                image
+                  ? { uri: image }
+                  : require("../../assets/images/profile.png")
+              }
+              style={styles.profileImage}
+            />
+          </TouchableOpacity>
+
+          {/* Username */}
+          <Text style={styles.username}>{user?.email || "No user found"}</Text>
+        </View>
+
+        <TouchableOpacity
+          style={styles.card}
+          onPress={() => router.push("/(tabs)/profile/editProfile")}
         >
-    <View style={styles.container}>
-      <Text style={styles.title}>Profile</Text>
-
-
-      <View style={styles.profile}>
-      {/* Profile Image */}
-      <TouchableOpacity onPress={pickImage}>
-        <Image
-          source={
-            image
-              ? { uri: image }
-              : require("../../assets/images/profile.png")
-          }
-          style={styles.profileImage}
-        />
-      </TouchableOpacity>
-
-      
-
-      {/* Username */}
-      <Text style={styles.username}>
-        {user?.email || "No user found"}
-      </Text>
-      </View>
-
-      <TouchableOpacity
-        style={styles.card}
-        onPress={() => router.push("/(tabs)/profile/editProfile")}>        
           <Text style={styles.label}>Edit Profile</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-        style={styles.card}
-        onPress={() => router.push("/(tabs)/profile/editProfile")}>        
+          style={styles.card}
+          onPress={() => router.push("/(tabs)/profile/feedback")}
+        >
           <Text style={styles.label}>Send Feedback</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-        style={styles.card}
-        onPress={() => router.push("/(tabs)/profile/editProfile")}>        
+          style={styles.card}
+          onPress={() => router.push("/(tabs)/profile/progress")}
+        >
           <Text style={styles.label}>My Reports</Text>
         </TouchableOpacity>
 
-      {/* Logout Button */}
-      <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
-        <Text style={styles.logoutText}>Logout</Text>
-      </TouchableOpacity>
+        {/*Logout Button */}
+        <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
+          <Text style={styles.logoutText}>Logout</Text>
+        </TouchableOpacity>
 
-      {/* App Info Card */}
-      <View style={styles.appCard}>
-        <Text style={styles.appTitle}>HealthMore</Text>
+        {/*App Info*/}
+        <View style={styles.appCard}>
+          <Text style={styles.appTitle}>HealthMore</Text>
 
-        <Text style={styles.appVersion}>Version 1.0</Text>
+          <Text style={styles.appVersion}>Version 1.0</Text>
+          <Text style={styles.appVersion}>built by thapelo segooa</Text>
 
-       {/* <Text style={styles.appDesc}>
+          {/* <Text style={styles.appDesc}>
           HealthMore helps you track calories, monitor weight, and improve your fitness journey.
         </Text>*/}
-
-
+        </View>
       </View>
-      
-    </View>
     </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-
   background: {
     flex: 1,
   },
@@ -177,20 +172,17 @@ const styles = StyleSheet.create({
     marginTop: 50,
     marginBottom: 20,
   },
-  profile:{
-   
+  profile: {
     padding: 10,
     marginHorizontal: 5,
     alignItems: "center",
-   
   },
   profileImage: {
     width: 200,
-    height:200,
+    height: 200,
     borderRadius: 100,
     marginBottom: 10,
   },
-
 
   username: {
     fontSize: 18,
@@ -224,31 +216,30 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   appCard: {
-  marginTop: 85,
-  shadowColor: "#000",
-  shadowOpacity: 0.2,
-  shadowRadius: 6,
-  elevation: 4,
-  alignItems: "center",
-},
+    marginTop: 85,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
+    alignItems: "center",
+  },
 
-appTitle: {
-  fontSize: 15,
-  fontWeight: "bold",
-  color: "#000",
-  marginBottom: 5,
-},
+  appTitle: {
+    fontSize: 15,
+    fontWeight: "bold",
+    color: "#000",
+    marginBottom: 5,
+  },
 
-appVersion: {
-  fontSize: 12,
-  color: "#666",
-  marginBottom: 10,
-},
+  appVersion: {
+    fontSize: 12,
+    color: "#666",
+    marginBottom: 0,
+  },
 
-appDesc: {
-  fontSize: 12,
-  color: "#333",
-  lineHeight: 20,
-},
-
+  appDesc: {
+    fontSize: 12,
+    color: "#333",
+    lineHeight: 20,
+  },
 });

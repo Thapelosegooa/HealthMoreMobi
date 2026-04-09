@@ -49,7 +49,7 @@ export default function BottomNav() {
             <Ionicons
               name={isActive ? tab.activeIcon : tab.icon}
               size={isActive ? 30 : 24} 
-              color={isActive ? "#1DB954" : "#6d6d6d"} 
+              color={isActive ? "#000000" : "#6d6d6d"} 
             />
           </Pressable>
         );
@@ -64,9 +64,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-around",
     alignItems: "center",
     height: 80,
-    backgroundColor: "#e9e9e9",
+    backgroundColor: "#ffffff",
     borderTopWidth: 1,
-    borderTopColor: "#e2e2e2",
+    borderTopColor: "#ffffff",
   },
 
   tab: {
