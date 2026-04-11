@@ -60,13 +60,25 @@ export default function BottomNav() {
 
 const styles = StyleSheet.create({
   container: {
+    position: "absolute",
+    bottom: 30,
+    left: 30,
+    right: 30, 
     flexDirection: "row",
     justifyContent: "space-around",
     alignItems: "center",
-    height: 80,
+
+    height: 70,
+    borderRadius: 35,
     backgroundColor: "#ffffff",
-    borderTopWidth: 1,
-    borderTopColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#ebebeb", 
+
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 6,
   },
 
   tab: {

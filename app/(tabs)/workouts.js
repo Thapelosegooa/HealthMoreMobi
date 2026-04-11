@@ -111,8 +111,9 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    fontSize: 30,
-    fontWeight: "bold",
+    fontSize: 25,
+    fontWeight: "500",
+    letterSpacing: 1,
     color: "#000",
     marginTop: 50,
     marginBottom: 20,

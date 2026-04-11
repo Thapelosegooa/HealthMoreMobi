@@ -71,7 +71,7 @@ export default function Home() {
     >
       <ScrollView style={styles.test}>
       <View style={styles.heading}>
-        <Text style={styles.header}>Home</Text>
+        <Text style={styles.header}>Welcome Home</Text>
       </View>
       
       <View style={styles.container}>
@@ -170,13 +170,15 @@ const styles = {
   },
   header: {
     textAlign: 'left',
-    color: "#000000", 
-    fontSize: 30, 
-    fontWeight: "bold"
+    fontSize: 25,
+    fontWeight: "500",
+    letterSpacing: 1,
+    color: "#000",
   },
+ 
   container: {
     flex: 1,
-    //backgroundColor: "#ffffff",
+    //backgroundColor: "#f5f5f5",
     alignItems: "center",
   },
   circleContainer: {
@@ -192,7 +194,7 @@ const styles = {
     width: 240,
     height: 240,
     borderRadius: 120,
-    borderWidth: 6,
+    borderWidth: 4,
     borderColor: "#1DB954",
     backgroundColor: "#ffffff",
     alignItems: "center",
@@ -230,6 +232,9 @@ const styles = {
     height: 70,
     padding: 15,
     backgroundColor: "#ffffff",
+
+    borderWidth: 2,
+    borderColor: "#1DB954", 
     justifyContent: "center",
     borderRadius: 20,
     marginTop: 15,
@@ -258,6 +263,8 @@ smallCard: {
   backgroundColor: "#ffffff",
   paddingVertical: 30,
   borderRadius: 15,
+  borderWidth: 2,
+  borderColor: "#1db954", 
   alignItems: "center",
   justifyContent: "center",
   shadowColor: "#00000070",

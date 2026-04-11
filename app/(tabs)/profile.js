@@ -10,6 +10,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Platform 
 } from "react-native";
 
 export default function Profile() {
@@ -166,8 +167,9 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    fontSize: 30,
-    fontWeight: "bold",
+    fontSize: 25,
+    fontWeight: "500",
+    letterSpacing: 1,
     color: "#000",
     marginTop: 50,
     marginBottom: 20,
@@ -216,7 +218,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   appCard: {
-    marginTop: 85,
+    marginTop: 60,
     shadowColor: "#000",
     shadowOpacity: 0.2,
     shadowRadius: 6,
