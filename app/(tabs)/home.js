@@ -166,12 +166,12 @@ const styles = {
   },
   heading: {
     paddingHorizontal: 20,
-    marginTop: 65,
+    marginTop: 75,
   },
   header: {
     textAlign: 'left',
     fontSize: 25,
-    fontWeight: "500",
+    fontWeight: "700",
     letterSpacing: 1,
     color: "#000",
   },
@@ -217,8 +217,9 @@ const styles = {
     fontWeight: "bold",
   },
   dayLabel: {
-    color: "#505050",
-    fontSize: 18,
+    color: "#6e6e6e",
+    fontSize: 20,
+    fontWeight: "500",
     marginTop: 12,
   },
   otherContent: {

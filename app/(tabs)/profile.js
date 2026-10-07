@@ -131,7 +131,7 @@ export default function Profile() {
 
         <TouchableOpacity
           style={styles.card}
-          onPress={() => router.push("/(tabs)/profile/progress")}
+          onPress={() => router.push("/(tabs)/profile/reports")}
         >
           <Text style={styles.label}>My Reports</Text>
         </TouchableOpacity>
