@@ -1,8 +1,7 @@
-
 import { Ionicons } from "@expo/vector-icons";
+import * as SecureStore from "expo-secure-store";
 import { useEffect, useRef, useState } from "react";
 import { BASE_URL } from "../../config/api";
-import * as SecureStore from "expo-secure-store";
 
 import {
   ActivityIndicator,
@@ -15,8 +14,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
-
 
 export default function Chat() {
   const [messages, setMessages] = useState([]);
@@ -61,15 +58,12 @@ export default function Chat() {
         throw new Error("Authentication required");
       }
 
-      const response = await fetch(
-        `${BASE_URL}/api/ai/greeting`,
-        {
-          method: "GET",
-          headers: {
-            "x-auth-token": token,
-          },
-        }
-      );
+      const response = await fetch(`${BASE_URL}/api/ai/greeting`, {
+        method: "GET",
+        headers: {
+          "x-auth-token": token,
+        },
+      });
 
       const data = await response.json();
 
@@ -91,92 +85,87 @@ export default function Chat() {
   };
 
   // Send message to backend
-  
-const sendMessage = async (message, selectedPlan = planType) => {
-  if (!message.trim() || isLoading || !selectedPlan) {
-    return;
-  }
 
-  setLastMessage({
-    message,
-    planType: selectedPlan,
-  });
-
-  setError(false);
-  setIsLoading(true);
-
-  const userMessage = {
-    id: `${Date.now()}-user`,
-    text: message,
-    sender: "user",
-  };
-
-  setMessages((prev) => [...prev, userMessage]);
-
-  try {
-    const token = await SecureStore.getItemAsync("token");
-
-    if (!token) {
-      throw new Error("Authentication required");
+  const sendMessage = async (message, selectedPlan = planType) => {
+    if (!message.trim() || isLoading || !selectedPlan) {
+      return;
     }
 
-
-
-    // Convert history to OpenAI/Groq format
-    const history = conversationHistory.map((item) => ({
-      role: item.role,
-      content: item.content,
-    }));
-
-    const response = await fetch(`${BASE_URL}/api/ai/chat`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-auth-token": token,
-      },
-      body: JSON.stringify({
-  planType: selectedPlan,
-  message,
-  history: conversationHistory,
-}),
+    setLastMessage({
+      message,
+      planType: selectedPlan,
     });
 
-    const data = await response.json();
+    setError(false);
+    setIsLoading(true);
 
-    if (!response.ok) {
-      throw new Error(data.msg || "AI request failed");
-    }
-
-    const botMessage = {
-      id: `${Date.now()}-bot`,
-      text: data.response,
-      sender: "bot",
+    const userMessage = {
+      id: `${Date.now()}-user`,
+      text: message,
+      sender: "user",
     };
 
-    setMessages((prev) => [...prev, botMessage]);
+    setMessages((prev) => [...prev, userMessage]);
 
-    // Save history in Groq-compatible format
-    setConversationHistory((prev) => [
-      ...prev,
-      {
-        role: "user",
-        content: message.trim(),
-      },
-      {
-        role: "assistant",
-        content: data.response,
-      },
-    ]);
+    try {
+      const token = await SecureStore.getItemAsync("token");
 
-  } catch (err) {
-    console.error("Chat error:", err);
-    setError(true);
+      if (!token) {
+        throw new Error("Authentication required");
+      }
 
-  } finally {
-    setIsLoading(false);
-  }
-};
+      // Convert history to OpenAI/Groq format
+      const history = conversationHistory.map((item) => ({
+        role: item.role,
+        content: item.content,
+      }));
 
+      const response = await fetch(`${BASE_URL}/api/ai/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-auth-token": token,
+        },
+        body: JSON.stringify({
+          planType: selectedPlan,
+          message,
+          history: conversationHistory,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.msg || "AI request failed");
+      }
+
+      const botMessage = {
+        id: `${Date.now()}-bot`,
+        text: data.response,
+        sender: "bot",
+      };
+
+      setMessages((prev) => [...prev, botMessage]);
+
+      // Save history in Groq-compatible format
+      setConversationHistory((prev) => [
+        ...prev,
+        {
+          role: "user",
+          content: message.trim(),
+        },
+        {
+          role: "assistant",
+          content: data.response,
+        },
+      ]);
+    } catch (err) {
+      console.error("Chat error:", err);
+      setError(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Select workout or meal plan
   const selectPlan = (selectedPlan) => {
@@ -189,9 +178,7 @@ const sendMessage = async (message, selectedPlan = planType) => {
     setError(false);
 
     const message =
-      selectedPlan === "workout"
-        ? "Build Workout Plan"
-        : "Build Meal Plan";
+      selectedPlan === "workout" ? "Build Workout Plan" : "Build Meal Plan";
 
     sendMessage(message, selectedPlan);
   };
@@ -210,72 +197,69 @@ const sendMessage = async (message, selectedPlan = planType) => {
   };
 
   // Retry failed request without duplicating user message
-  
-const retryMessage = async () => {
-  if (!lastMessage || isLoading) return;
 
-  const { message, planType: selectedPlan } = lastMessage;
+  const retryMessage = async () => {
+    if (!lastMessage || isLoading) return;
 
-  setError(false);
-  setIsLoading(true);
+    const { message, planType: selectedPlan } = lastMessage;
 
-  try {
-    const token = await SecureStore.getItemAsync("token");
+    setError(false);
+    setIsLoading(true);
 
-    if (!token) {
-      throw new Error("Authentication required");
+    try {
+      const token = await SecureStore.getItemAsync("token");
+
+      if (!token) {
+        throw new Error("Authentication required");
+      }
+
+      const response = await fetch(`${BASE_URL}/api/ai/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-auth-token": token,
+        },
+        body: JSON.stringify({
+          planType: selectedPlan,
+          message,
+          history: conversationHistory,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.msg || "AI request failed");
+      }
+
+      const botMessage = {
+        id: `${Date.now()}-bot`,
+        text: data.response,
+        sender: "bot",
+      };
+
+      setMessages((prev) => [...prev, botMessage]);
+
+      setConversationHistory((prev) => [
+        ...prev,
+        {
+          role: "user",
+          content: message,
+        },
+        {
+          role: "assistant",
+          content: data.response,
+        },
+      ]);
+
+      setLastMessage(null);
+    } catch (err) {
+      console.error("Retry error:", err);
+      setError(true);
+    } finally {
+      setIsLoading(false);
     }
-
-    const response = await fetch(`${BASE_URL}/api/ai/chat`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-auth-token": token,
-      },
-      body: JSON.stringify({
-        planType: selectedPlan,
-        message,
-        history: conversationHistory,
-      }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.msg || "AI request failed");
-    }
-
-    const botMessage = {
-      id: `${Date.now()}-bot`,
-      text: data.response,
-      sender: "bot",
-    };
-
-    setMessages((prev) => [...prev, botMessage]);
-
-    setConversationHistory((prev) => [
-      ...prev,
-      {
-        role: "user",
-        content: message,
-      },
-      {
-        role: "assistant",
-        content: data.response,
-      },
-    ]);
-
-    setLastMessage(null);
-
-  } catch (err) {
-    console.error("Retry error:", err);
-    setError(true);
-
-  } finally {
-    setIsLoading(false);
-  }
-};
-
+  };
 
   // Start a new conversation
   const startNewChat = () => {
@@ -333,9 +317,7 @@ const retryMessage = async () => {
           <View
             style={[
               styles.messageBubble,
-              item.sender === "bot"
-                ? styles.botMessage
-                : styles.userMessage,
+              item.sender === "bot" ? styles.botMessage : styles.userMessage,
             ]}
           >
             <Text
@@ -364,9 +346,7 @@ const retryMessage = async () => {
               <View style={styles.loadingBubble}>
                 <ActivityIndicator size="small" color="#4CAF50" />
 
-                <Text style={styles.loadingText}>
-                  Assistant is thinking...
-                </Text>
+                <Text style={styles.loadingText}>Assistant is thinking...</Text>
               </View>
             )}
 
@@ -382,13 +362,10 @@ const retryMessage = async () => {
                 </View>
 
                 <View style={styles.errorContent}>
-                  <Text style={styles.errorTitle}>
-                    AI assistant is offline
-                  </Text>
+                  <Text style={styles.errorTitle}>AI assistant is offline</Text>
 
                   <Text style={styles.errorText}>
-                    We couldn't connect to the assistant.
-                    Please try again.
+                    We couldn't connect to the assistant. Please try again.
                   </Text>
 
                   <TouchableOpacity
@@ -410,33 +387,23 @@ const retryMessage = async () => {
       {!planType && (
         <View style={styles.options}>
           <TouchableOpacity
-            style={[
-              styles.optionButton,
-              isLoading && styles.disabledButton,
-            ]}
+            style={[styles.optionButton, isLoading && styles.disabledButton]}
             disabled={isLoading}
             onPress={() => selectPlan("workout")}
           >
             <Ionicons name="barbell-outline" size={20} color="#222" />
 
-            <Text style={styles.optionText}>
-              Build Workout Plan
-            </Text>
+            <Text style={styles.optionText}>Build Workout Plan</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[
-              styles.optionButton,
-              isLoading && styles.disabledButton,
-            ]}
+            style={[styles.optionButton, isLoading && styles.disabledButton]}
             disabled={isLoading}
             onPress={() => selectPlan("meal")}
           >
             <Ionicons name="restaurant-outline" size={20} color="#222" />
 
-            <Text style={styles.optionText}>
-              Build Meal Plan
-            </Text>
+            <Text style={styles.optionText}>Build Meal Plan</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -458,8 +425,7 @@ const retryMessage = async () => {
           <TouchableOpacity
             style={[
               styles.sendButton,
-              (!inputMessage.trim() || isLoading) &&
-                styles.disabledButton,
+              (!inputMessage.trim() || isLoading) && styles.disabledButton,
             ]}
             disabled={!inputMessage.trim() || isLoading}
             onPress={handleSend}
