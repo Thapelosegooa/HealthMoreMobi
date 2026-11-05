@@ -1,17 +1,17 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  ScrollView,
-  StyleSheet,
-  Alert,
-  ImageBackground,
-  Dimensions,
+    Alert,
+    Dimensions,
+    ImageBackground,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 
+import { BarChart, LineChart } from "react-native-chart-kit";
 import { BASE_URL } from "../../../config/api";
 import { getToken } from "../../../utils/getToken";
-import { BarChart, LineChart } from "react-native-chart-kit";
 
 export default function Reports() {
   const [calorieData, setCalorieData] = useState(null);
@@ -31,10 +31,7 @@ export default function Reports() {
       const token = await getToken();
 
       if (!token) {
-        Alert.alert(
-          "Session expired",
-          "Please log in again."
-        );
+        Alert.alert("Session expired", "Please log in again.");
         return;
       }
 
@@ -42,47 +39,33 @@ export default function Reports() {
       // FETCH CALORIES
       // =========================================
 
-      const calorieResponse = await fetch(
-        `${BASE_URL}/api/calories/weekly`,
-        {
-          headers: {
-            "x-auth-token": token,
-          },
-        }
-      );
+      const calorieResponse = await fetch(`${BASE_URL}/api/calories/weekly`, {
+        headers: {
+          "x-auth-token": token,
+        },
+      });
 
       if (!calorieResponse.ok) {
-        throw new Error(
-          "Failed to load calorie data"
-        );
+        throw new Error("Failed to load calorie data");
       }
 
-      const calorieJson =
-        await calorieResponse.json();
+      const calorieJson = await calorieResponse.json();
 
       // =========================================
       // FETCH WEIGHT
       // =========================================
 
-      const weightResponse = await fetch(
-        `${BASE_URL}/api/weight/weekly`,
-        {
-          headers: {
-            "x-auth-token": token,
-          },
-        }
-      );
+      const weightResponse = await fetch(`${BASE_URL}/api/weight/weekly`, {
+        headers: {
+          "x-auth-token": token,
+        },
+      });
 
       if (!weightResponse.ok) {
-        throw new Error(
-          "Failed to load weight data"
-        );
+        throw new Error("Failed to load weight data");
       }
 
-      const weightJson =
-        await weightResponse.json();
-
-      
+      const weightJson = await weightResponse.json();
 
       // =========================================
       // CREATE LAST 7 DAYS
@@ -93,13 +76,9 @@ export default function Reports() {
       for (let i = 6; i >= 0; i--) {
         const d = new Date();
 
-        d.setDate(
-          d.getDate() - i
-        );
+        d.setDate(d.getDate() - i);
 
-        const dayStr = d
-          .toISOString()
-          .split("T")[0];
+        const dayStr = d.toISOString().split("T")[0];
 
         last7Days.push(dayStr);
       }
@@ -113,31 +92,19 @@ export default function Reports() {
       const calorieLabels = [];
       const calorieValues = [];
 
-      last7Days.forEach(
-        (dayStr) => {
-          calorieLabels.push(
-            dayStr.slice(5)
-          );
+      last7Days.forEach((dayStr) => {
+        calorieLabels.push(dayStr.slice(5));
 
-          const dayRecord =
-            calorieJson.find(
-              (record) =>
-                String(record.date).split(
-                  "T"
-                )[0] === dayStr
-            );
+        const dayRecord = calorieJson.find(
+          (record) => String(record.date).split("T")[0] === dayStr,
+        );
 
-          if (dayRecord) {
-            calorieValues.push(
-              Number(
-                dayRecord.consumed
-              )
-            );
-          } else {
-            calorieValues.push(0);
-          }
+        if (dayRecord) {
+          calorieValues.push(Number(dayRecord.consumed));
+        } else {
+          calorieValues.push(0);
         }
-      );
+      });
 
       setCalorieData({
         labels: calorieLabels,
@@ -148,64 +115,33 @@ export default function Reports() {
       // NORMALIZE WEIGHT RECORDS
       // =========================================
 
-      const weightRecords =
-        weightJson
-          .filter(
-            (record) =>
-              record.weight !==
-                undefined &&
-              record.weight !== null &&
-              record.date
-          )
-          .map(
-            (record) => ({
-              date: String(
-                record.date
-              ).split("T")[0],
+      const weightRecords = weightJson
+        .filter(
+          (record) =>
+            record.weight !== undefined &&
+            record.weight !== null &&
+            record.date,
+        )
+        .map((record) => ({
+          date: String(record.date).split("T")[0],
 
-              weight: Number(
-                record.weight
-              ),
-            })
-          )
-          .filter(
-            (record) =>
-              !isNaN(
-                record.weight
-              )
-          )
-          .sort(
-            (a, b) =>
-              a.date.localeCompare(
-                b.date
-              )
-          );
-
-      
+          weight: Number(record.weight),
+        }))
+        .filter((record) => !isNaN(record.weight))
+        .sort((a, b) => a.date.localeCompare(b.date));
 
       // =========================================
       // FIND PREVIOUS WEIGHT
       // =========================================
 
-      const getPreviousWeight = (
-        date
-      ) => {
+      const getPreviousWeight = (date) => {
         let previousWeight = null;
 
-        for (
-          let i = 0;
-          i <
-          weightRecords.length;
-          i++
-        ) {
-          const record =
-            weightRecords[i];
+        for (let i = 0; i < weightRecords.length; i++) {
+          const record = weightRecords[i];
 
-          if (
-            record.date <= date
-          ) {
-            previousWeight =
-              record.weight;
+          if (record.date <= date) {
+            previousWeight = record.weight;
           } else {
             break;
           }
@@ -221,71 +157,39 @@ export default function Reports() {
       const weightLabels = [];
       const weightValues = [];
 
-      last7Days.forEach(
-        (dayStr) => {
-          weightLabels.push(
-            dayStr.slice(5)
-          );
+      last7Days.forEach((dayStr) => {
+        weightLabels.push(dayStr.slice(5));
 
-          // First look for exact day
-          const exactRecord =
-            weightRecords.find(
-              (record) =>
-                record.date ===
-                dayStr
-            );
+        // First look for exact day
+        const exactRecord = weightRecords.find(
+          (record) => record.date === dayStr,
+        );
 
-          if (exactRecord) {
-            weightValues.push(
-              exactRecord.weight
-            );
+        if (exactRecord) {
+          weightValues.push(exactRecord.weight);
+        } else {
+          // Otherwise use previous weight
+          const previousWeight = getPreviousWeight(dayStr);
 
-            
+          if (previousWeight !== null) {
+            weightValues.push(previousWeight);
           } else {
-            // Otherwise use previous weight
-            const previousWeight =
-              getPreviousWeight(
-                dayStr
-              );
+            // No weight exists yet
+            weightValues.push(0);
 
-            if (
-              previousWeight !==
-              null
-            ) {
-              weightValues.push(
-                previousWeight
-              );
-
-              
-            } else {
-              // No weight exists yet
-              weightValues.push(0);
-
-              console.log(
-                dayStr,
-                "NO PREVIOUS WEIGHT"
-              );
-            }
+            console.log(dayStr, "NO PREVIOUS WEIGHT");
           }
         }
-      );
-
-      
+      });
 
       setWeightData({
         labels: weightLabels,
         data: weightValues,
       });
     } catch (error) {
-      console.log(
-        "Reports error:",
-        error
-      );
+      console.log("Reports error:", error);
 
-      Alert.alert(
-        "Error",
-        "Failed to load your reports."
-      );
+      Alert.alert("Error", "Failed to load your reports.");
     } finally {
       setLoading(false);
     }
@@ -302,18 +206,8 @@ export default function Reports() {
         style={styles.background}
         resizeMode="cover"
       >
-        <View
-          style={
-            styles.loadingContainer
-          }
-        >
-          <Text
-            style={
-              styles.loadingText
-            }
-          >
-            Loading reports...
-          </Text>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading reports...</Text>
         </View>
       </ImageBackground>
     );
@@ -323,8 +217,7 @@ export default function Reports() {
   // CHART DIMENSIONS
   // =========================================
 
-  const chartWidth =
-    screenWidth - 20;
+  const chartWidth = screenWidth - 20;
 
   const chartHeight = 320;
 
@@ -333,15 +226,9 @@ export default function Reports() {
   const topMargin = 30;
   const bottomMargin = 45;
 
-  const usableWidth =
-    chartWidth -
-    leftMargin -
-    rightMargin;
+  const usableWidth = chartWidth - leftMargin - rightMargin;
 
-  const usableHeight =
-    chartHeight -
-    topMargin -
-    bottomMargin;
+  const usableHeight = chartHeight - topMargin - bottomMargin;
 
   // =========================================
   // VALID WEIGHTS
@@ -349,40 +236,20 @@ export default function Reports() {
 
   const validWeights =
     weightData?.data.filter(
-      (weight) =>
-        weight !== null &&
-        weight !== undefined &&
-        weight > 0
+      (weight) => weight !== null && weight !== undefined && weight > 0,
     ) || [];
 
-  const minWeight =
-    validWeights.length > 0
-      ? Math.min(
-          ...validWeights
-        )
-      : 0;
+  const minWeight = validWeights.length > 0 ? Math.min(...validWeights) : 0;
 
-  const maxWeight =
-    validWeights.length > 0
-      ? Math.max(
-          ...validWeights
-        )
-      : 1;
+  const maxWeight = validWeights.length > 0 ? Math.max(...validWeights) : 1;
 
   const weightPadding = 2;
 
-  const chartMinWeight =
-    minWeight -
-    weightPadding;
+  const chartMinWeight = minWeight - weightPadding;
 
-  const chartMaxWeight =
-    maxWeight +
-    weightPadding;
+  const chartMaxWeight = maxWeight + weightPadding;
 
-  const weightRange =
-    chartMaxWeight -
-      chartMinWeight ||
-    1;
+  const weightRange = chartMaxWeight - chartMinWeight || 1;
 
   // =========================================
   // RENDER
@@ -396,45 +263,23 @@ export default function Reports() {
     >
       <ScrollView
         style={styles.container}
-        contentContainerStyle={
-          styles.contentContainer
-        }
+        contentContainerStyle={styles.contentContainer}
       >
         {/* ================================= */}
         {/* HEADER */}
         {/* ================================= */}
 
-        <View
-          style={styles.heading}
-        >
-          <Text
-            style={styles.header}
-          >
-            Reports
-          </Text>
-
-          
+        <View style={styles.heading}>
+          <Text style={styles.header}>Reports</Text>
         </View>
 
-                
         {/* INFO */}
-        
 
-        <View
-          style={styles.infoCard}
-        >
-          <Text
-            style={styles.infoTitle}
-          >
-            About your Reports
-          </Text>
+        <View style={styles.infoCard}>
+          <Text style={styles.infoTitle}>About your Reports</Text>
 
-          <Text
-            style={styles.infoText}
-          >
-            These graphs display your
-            calorie intake and
-            weight records from the
+          <Text style={styles.infoText}>
+            These graphs display your calorie intake and weight records from the
             last 7 days.
           </Text>
         </View>
@@ -443,97 +288,60 @@ export default function Reports() {
         {/* CALORIES */}
         {/* ================================= */}
 
-        <View
-          style={styles.chartCard}
-        >
-          <Text
-            style={
-              styles.sectionTitle
-            }
-          >
-            Weekly Calories
-          </Text>
+        <View style={styles.chartCard}>
+          <Text style={styles.sectionTitle}>Weekly Calories</Text>
 
           {calorieData && (
             <BarChart
               data={{
-                labels:
-                  calorieData.labels,
+                labels: calorieData.labels,
 
                 datasets: [
                   {
-                    data:
-                      calorieData.data,
+                    data: calorieData.data,
                   },
                 ],
               }}
-              width={
-                screenWidth - 20
-              }
+              width={screenWidth - 20}
               height={280}
               yAxisLabel=""
-              showValuesOnTopOfBars={
-                true
-              }
+              showValuesOnTopOfBars={true}
               chartConfig={{
-                backgroundGradientFrom:
-                  "#ffffff",
+                backgroundGradientFrom: "#ffffff",
 
-                backgroundGradientTo:
-                  "#ffffff",
+                backgroundGradientTo: "#ffffff",
 
-                fillShadowGradient:
-                  "#1DB954",
+                fillShadowGradient: "#1DB954",
 
                 fillShadowGradientOpacity: 1,
 
                 decimalPlaces: 0,
 
-                color: (
-                  opacity = 1
-                ) =>
-                  `rgba(29, 185, 84, ${opacity})`,
+                color: (opacity = 1) => `rgba(29, 185, 84, ${opacity})`,
 
-                labelColor: (
-                  opacity = 1
-                ) =>
-                  `rgba(0,0,0,${opacity})`,
+                labelColor: (opacity = 1) => `rgba(0,0,0,${opacity})`,
 
-                propsForBackgroundLines:
-                  {
-                    stroke:
-                      "rgba(0, 0, 0, 0.1)",
-                  },
+                propsForBackgroundLines: {
+                  stroke: "rgba(0, 0, 0, 0.1)",
+                },
               }}
               style={styles.chart}
             />
           )}
         </View>
 
-
         {/* WEIGHT */}
-        
 
-        <View
-          style={styles.chartCard}
-        >
-          <Text
-            style={
-              styles.sectionTitle
-            }
-          >
-            Weekly Weight
-          </Text>
+        <View style={styles.chartCard}>
+          <Text style={styles.sectionTitle}>Weekly Weight</Text>
 
           {weightData && (
             <View
               style={[
                 styles.weightChartContainer,
                 {
-                  width:
-                    chartWidth,
-                  height:
-                    chartHeight,
+                  width: chartWidth,
+                  height: chartHeight,
                 },
               ]}
             >
@@ -541,159 +349,100 @@ export default function Reports() {
 
               <LineChart
                 data={{
-                  labels:
-                    weightData.labels,
+                  labels: weightData.labels,
 
                   datasets: [
                     {
-                      data:
-                        weightData.data,
+                      data: weightData.data,
 
-                      color: (
-                        opacity = 1
-                      ) =>
-                        `rgba(29, 185, 84, ${opacity})`,
+                      color: (opacity = 1) => `rgba(29, 185, 84, ${opacity})`,
 
                       strokeWidth: 3,
                     },
                   ],
                 }}
-                width={
-                  chartWidth
-                }
-                height={
-                  chartHeight
-                }
+                width={chartWidth}
+                height={chartHeight}
                 yAxisSuffix=" kg"
                 yAxisInterval={1}
                 fromZero={false}
                 bezier
                 chartConfig={{
-                  backgroundGradientFrom:
-                    "#ffffff",
+                  backgroundGradientFrom: "#ffffff",
 
-                  backgroundGradientTo:
-                    "#ffffff",
+                  backgroundGradientTo: "#ffffff",
 
                   decimalPlaces: 1,
 
-                  color: (
-                    opacity = 1
-                  ) =>
-                    `rgba(29, 185, 84, ${opacity})`,
+                  color: (opacity = 1) => `rgba(29, 185, 84, ${opacity})`,
 
-                  labelColor: (
-                    opacity = 1
-                  ) =>
-                    `rgba(0, 0, 0, ${opacity})`,
+                  labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
 
-                  propsForDots:
-                    {
-                      r: "5",
+                  propsForDots: {
+                    r: "5",
 
-                      strokeWidth:
-                        "2",
+                    strokeWidth: "2",
 
-                      stroke:
-                        "#1DB954",
+                    stroke: "#1DB954",
 
-                      fill:
-                        "#ffffff",
-                    },
+                    fill: "#ffffff",
+                  },
 
-                  propsForBackgroundLines:
-                    {
-                      stroke:
-                        "rgba(0, 0, 0, 0.1)",
-                    },
+                  propsForBackgroundLines: {
+                    stroke: "rgba(0, 0, 0, 0.1)",
+                  },
                 }}
-                style={
-                  styles.chart
-                }
+                style={styles.chart}
               />
 
               {/* WEIGHT NUMBERS */}
 
-              <View
-                pointerEvents="none"
-                style={
-                  styles.labelsContainer
-                }
-              >
-                {weightData.data.map(
-                  (
-                    weight,
-                    index
-                  ) => {
-                    if (
-                      !weight ||
-                      weight === 0
-                    ) {
-                      return null;
-                    }
-
-                    // X position
-                    const x =
-                      leftMargin +
-                      (index /
-                        Math.max(
-                          weightData
-                            .data
-                            .length -
-                            1,
-                          1
-                        )) *
-                        usableWidth;
-
-                    // Y position
-                    const y =
-                      topMargin +
-                      (1 -
-                        (weight -
-                          chartMinWeight) /
-                          weightRange) *
-                        usableHeight;
-
-                    return (
-                      <Text
-                        key={`weight-${index}`}
-                        style={[
-                          styles.weightLabel,
-                          {
-                            left:
-                              x -
-                              30,
-
-                            top:
-                              y -
-                              25,
-                          },
-                        ]}
-                      >
-                        {Number(
-                          weight
-                        ).toFixed(
-                          1
-                        )}{" "}
-                        kg
-                      </Text>
-                    );
+              <View pointerEvents="none" style={styles.labelsContainer}>
+                {weightData.data.map((weight, index) => {
+                  if (!weight || weight === 0) {
+                    return null;
                   }
-                )}
+
+                  // X position
+                  const x =
+                    leftMargin +
+                    (index / Math.max(weightData.data.length - 1, 1)) *
+                      usableWidth;
+
+                  // Y position
+                  const y =
+                    topMargin +
+                    (1 - (weight - chartMinWeight) / weightRange) *
+                      usableHeight;
+
+                  return (
+                    <Text
+                      key={`weight-${index}`}
+                      style={[
+                        styles.weightLabel,
+                        {
+                          left: x - 30,
+
+                          top: y - 25,
+                        },
+                      ]}
+                    >
+                      {Number(weight).toFixed(1)} kg
+                    </Text>
+                  );
+                })}
               </View>
             </View>
           )}
         </View>
 
-      <View><Text style={styles.spacer}>
-        </Text>
+        <View>
+          <Text style={styles.spacer}></Text>
         </View>
       </ScrollView>
     </ImageBackground>
   );
 }
-
-
 
 const styles = StyleSheet.create({
   background: {
@@ -727,26 +476,22 @@ const styles = StyleSheet.create({
   },
 
   chartCard: {
-    justifyContent:
-      "center",
+    justifyContent: "center",
 
     marginTop: 20,
     padding: 10,
     borderRadius: 20,
 
-    backgroundColor:
-      "#fff",
+    backgroundColor: "#fff",
 
-    shadowColor:
-      "#000",
+    shadowColor: "#000",
 
     shadowOffset: {
       width: 0,
       height: 4,
     },
 
-    shadowOpacity:
-      0.15,
+    shadowOpacity: 0.15,
 
     shadowRadius: 6,
 
@@ -774,22 +519,18 @@ const styles = StyleSheet.create({
     marginBottom: 50,
   },
 
-
   // =======================================
   // WEIGHT GRAPH
   // =======================================
 
   weightChartContainer: {
-    position:
-      "relative",
+    position: "relative",
 
-    backgroundColor:
-      "#ffffff",
+    backgroundColor: "#ffffff",
   },
 
   labelsContainer: {
-    position:
-      "absolute",
+    position: "absolute",
 
     top: 0,
 
@@ -803,24 +544,19 @@ const styles = StyleSheet.create({
   },
 
   weightLabel: {
-    position:
-      "absolute",
+    position: "absolute",
 
     width: 60,
 
-    textAlign:
-      "center",
+    textAlign: "center",
 
-    color:
-      "#1DB954",
+    color: "#1DB954",
 
     fontSize: 11,
 
-    fontWeight:
-      "bold",
+    fontWeight: "bold",
 
-    backgroundColor:
-      "rgba(255,255,255,0.9)",
+    backgroundColor: "rgba(255,255,255,0.9)",
 
     paddingVertical: 2,
 
@@ -832,8 +568,7 @@ const styles = StyleSheet.create({
   // =======================================
 
   infoCard: {
-    backgroundColor:
-      "#fff",
+    backgroundColor: "#fff",
 
     padding: 20,
 
@@ -841,16 +576,14 @@ const styles = StyleSheet.create({
 
     marginTop: 20,
 
-    shadowColor:
-      "#000",
+    shadowColor: "#000",
 
     shadowOffset: {
       width: 0,
       height: 4,
     },
 
-    shadowOpacity:
-      0.15,
+    shadowOpacity: 0.15,
 
     shadowRadius: 6,
 
@@ -860,11 +593,9 @@ const styles = StyleSheet.create({
   infoTitle: {
     fontSize: 18,
 
-    fontWeight:
-      "bold",
+    fontWeight: "bold",
 
-    color:
-      "#000",
+    color: "#000",
 
     marginBottom: 8,
   },
@@ -872,8 +603,7 @@ const styles = StyleSheet.create({
   infoText: {
     fontSize: 14,
 
-    color:
-      "#555",
+    color: "#555",
 
     lineHeight: 21,
   },
@@ -881,17 +611,14 @@ const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
 
-    justifyContent:
-      "center",
+    justifyContent: "center",
 
-    alignItems:
-      "center",
+    alignItems: "center",
   },
 
   loadingText: {
     fontSize: 16,
 
-    color:
-      "#333",
+    color: "#333",
   },
 });
