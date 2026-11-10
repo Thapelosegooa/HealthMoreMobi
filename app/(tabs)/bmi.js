@@ -1,12 +1,16 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  View,
+  ActivityIndicator,
+  ImageBackground,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
-  StyleSheet,
-  ScrollView,
-  ImageBackground,
+  View,
 } from "react-native";
+
+import { BASE_URL } from "../../config/api";
+import { getToken } from "../../utils/getToken";
 
 export default function BMI() {
   const [height, setHeight] = useState("");
@@ -31,6 +35,66 @@ export default function BMI() {
     if (bmi < 30) return "Overweight";
     return "Obese";
   };
+  ////
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchMeasurements = async () => {
+      try {
+        const token = await getToken();
+
+        // Fetch user profile for height
+        const profileResponse = await fetch(`${BASE_URL}/api/auth/profile`, {
+          headers: {
+            "x-auth-token": token,
+          },
+        });
+
+        if (!profileResponse.ok) {
+          throw new Error("Failed to fetch user profile");
+        }
+
+        const profileData = await profileResponse.json();
+
+        // Fetch latest weight
+        const weightResponse = await fetch(`${BASE_URL}/api/weight`, {
+          headers: {
+            "x-auth-token": token,
+          },
+        });
+
+        if (!weightResponse.ok) {
+          throw new Error("Failed to fetch weight");
+        }
+
+        const weightData = await weightResponse.json();
+
+        // Populate fields
+        if (profileData.height) {
+          setHeight(String(profileData.height));
+        }
+
+        if (weightData.weight > 0) {
+          setWeight(String(weightData.weight));
+        }
+      } catch (error) {
+        console.log("Error fetching measurements:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMeasurements();
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#1DB954" />
+        <Text>Loading measurements...</Text>
+      </View>
+    );
+  }
 
   return (
     <ImageBackground
@@ -46,30 +110,46 @@ export default function BMI() {
           <View style={styles.resultCard}>
             <Text style={styles.resultLabel}>Your BMI</Text>
 
-            <Text style={styles.resultValue}>
-              {bmi ? bmi : "--"}
-            </Text>
+            <Text style={styles.resultValue}>{bmi ? bmi : "--"}</Text>
 
-            <Text style={styles.category}>
-              {bmi ? getCategory() : ""}
-            </Text>
+            <Text style={styles.category}>{bmi ? getCategory() : ""}</Text>
           </View>
 
           {/* BMI BAR */}
           <View style={styles.bmiBarContainer}>
             <View style={styles.bmiBar}>
-            {/* Underweight */}
-            <View style={[styles.segment, { backgroundColor: "#3498db", flex: 18.5 }]} />
+              {/* Underweight */}
+              <View
+                style={[
+                  styles.segment,
+                  { backgroundColor: "#3498db", flex: 18.5 },
+                ]}
+              />
 
-            {/* Normal */}
-            <View style={[styles.segment, { backgroundColor: "#1DB954", flex: 6.5 }]} />
+              {/* Normal */}
+              <View
+                style={[
+                  styles.segment,
+                  { backgroundColor: "#1DB954", flex: 6.5 },
+                ]}
+              />
 
-            {/* Overweight */}
-            <View style={[styles.segment, { backgroundColor: "#f39c12", flex: 5 }]} />
+              {/* Overweight */}
+              <View
+                style={[
+                  styles.segment,
+                  { backgroundColor: "#f39c12", flex: 5 },
+                ]}
+              />
 
-            {/* Obese */}
-            <View style={[styles.segment, { backgroundColor: "#e74c3c", flex: 10 }]} />
-          </View>
+              {/* Obese */}
+              <View
+                style={[
+                  styles.segment,
+                  { backgroundColor: "#e74c3c", flex: 10 },
+                ]}
+              />
+            </View>
 
             {/* Indicator */}
             {bmi && (
@@ -84,11 +164,11 @@ export default function BMI() {
 
           {/* Labels */}
           <View style={styles.labelsContainer}>
-          <Text style={[styles.label, { left: "0%" }]}>Under</Text>
-          <Text style={[styles.label, { left: "40%" }]}>Normal</Text>
-          <Text style={[styles.label, { left: "65%" }]}>Over</Text>
-          <Text style={[styles.label, { left: "90%" }]}>Obese</Text>
-        </View>
+            <Text style={[styles.label, { left: "0%" }]}>Under</Text>
+            <Text style={[styles.label, { left: "40%" }]}>Normal</Text>
+            <Text style={[styles.label, { left: "65%" }]}>Over</Text>
+            <Text style={[styles.label, { left: "90%" }]}>Obese</Text>
+          </View>
 
           {/* INPUTS */}
           <TextInput
@@ -199,16 +279,16 @@ const styles = StyleSheet.create({
     backgroundColor: "#000",
   },
 
- labelsContainer: {
-  position: "relative",
-  width: "100%",
-  marginTop: 6,
-  height: 20,
-},
+  labelsContainer: {
+    position: "relative",
+    width: "100%",
+    marginTop: 6,
+    height: 20,
+  },
 
-label: {
-  position: "absolute",
-  fontSize: 10,
-  color: "#555",
-},
+  label: {
+    position: "absolute",
+    fontSize: 10,
+    color: "#555",
+  },
 });
