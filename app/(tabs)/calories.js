@@ -6,8 +6,18 @@ import {
   Modal,
   ScrollView,
   StyleSheet,
-  Alert, ImageBackground
+  Alert,
+  ImageBackground,
+  ActivityIndicator
 } from "react-native";
+
+import * as FileSystem from "expo-file-system/legacy";
+import * as ImagePicker from "expo-image-picker";
+
+import { File } from "expo-file-system";
+import { fetch as expoFetch } from "expo/fetch";
+import { Ionicons } from "@expo/vector-icons";
+
 import { useEffect, useState } from "react";
 import { BASE_URL } from "../../config/api";
 import { getToken } from "../../utils/getToken";
@@ -15,6 +25,9 @@ import { BarChart } from "react-native-chart-kit";
 import { Dimensions } from "react-native";
 
 export default function Calories() {
+
+  const [scanning, setScanning] = useState(false);
+  const [scannedCalories, setScannedCalories] = useState(null);
   const [data, setData] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [newLimit, setNewLimit] = useState("");
@@ -37,6 +50,162 @@ export default function Calories() {
     const json = await res.json();
     setData(json);
   };
+
+  // open camera and gallery
+  const openFoodScanner = () => {
+  Alert.alert(
+    "Scan Food",
+    "How would you like to upload your food?",
+    [
+      {
+        text: "Take Photo",
+        onPress: () => captureFood()
+      },
+      {
+        text: "Choose from Gallery",
+        onPress: () => selectFood()
+      },
+      {
+        text: "Cancel",
+        style: "cancel"
+      }
+    ]
+  );
+};
+
+///////caputure food 
+const captureFood = async () => {
+  const permission =
+    await ImagePicker.requestCameraPermissionsAsync();
+
+  if (!permission.granted) {
+    Alert.alert("Permission required", "Camera access is needed.");
+    return;
+  }
+
+  const result = await ImagePicker.launchCameraAsync({
+    mediaTypes: ["images"],
+    allowsEditing: false,
+    quality: 0.7,
+  });
+
+  if (!result.canceled) {
+    uploadFoodImage(result.assets[0]);
+  }
+};
+
+/// select from gallery
+const selectFood = async () => {
+  const permission =
+    await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+  if (!permission.granted) {
+    Alert.alert("Permission required", "Gallery access is needed.");
+    return;
+  }
+
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ["images"],
+    allowsEditing: false,
+    quality: 0.7,
+  });
+
+  if (!result.canceled) {
+    uploadFoodImage(result.assets[0]);
+  }
+};
+
+/// upload to ai model
+
+const uploadFoodImage = async (image) => {
+  try {
+    setScanning(true);
+    setScannedCalories(null);
+
+    const token = await getToken();
+
+    // Create a native file from the selected image URI
+    const file = new File(image.uri);
+
+    const formData = new FormData();
+
+    formData.append("image", file);
+
+    // Use Expo's native-compatible fetch implementation
+    const response = await expoFetch(
+      `${BASE_URL}/api/food/scan`,
+      {
+        method: "POST",
+        headers: {
+          "x-auth-token": token,
+        },
+        body: formData,
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        result.error || "Food analysis failed"
+      );
+    }
+
+    if (!Number.isInteger(result.calories)) {
+      throw new Error("Invalid calorie result");
+    }
+
+    setScannedCalories(result.calories);
+
+  } catch (error) {
+    console.log("Food scan error:", error);
+
+    Alert.alert(
+      "Scan Failed",
+      error.message || "Unable to analyse food."
+    );
+
+  } finally {
+    setScanning(false);
+  }
+};
+
+
+
+// add calories from ai to calorie intake
+const addScannedCalories = async () => {
+  try {
+    const token = await getToken();
+
+    const response = await fetch(
+      `${BASE_URL}/api/calories/add`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-auth-token": token,
+        },
+        body: JSON.stringify({
+          amount: scannedCalories
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to add calories");
+    }
+
+    setScannedCalories(null);
+
+    await fetchCalories();
+    await fetchWeekly();
+
+    Alert.alert("Success", "Calories added to your daily intake!");
+
+  } catch (error) {
+    Alert.alert("Error", error.message);
+  }
+};
 
   // weekly calories api call
   const fetchWeekly = async () => {
@@ -173,8 +342,80 @@ export default function Calories() {
         </View>
       </Modal>
 
-      {/* add calories */}
-      <Text style={styles.sectionTitle}>Add Calories</Text>
+      
+      
+{/* FOOD SCANNER */}
+<View style={styles.scannerCard}>
+
+
+  <TouchableOpacity
+    style={styles.scanButton}
+    onPress={openFoodScanner}
+    disabled={scanning}
+  >
+    <Ionicons
+  name="camera-outline"
+  size={32}
+  color="#1DB954"
+  style={styles.cameraIcon}
+/>
+
+    <View style={{ flex: 1 }}>
+      <Text style={styles.scanTitle}>
+        Scan a Meal
+      </Text>
+
+      
+    </View>
+
+    <Text style={styles.scanArrow}>›</Text>
+  </TouchableOpacity>
+
+  {/* ANALYSING */}
+  {scanning && (
+    <View style={styles.scanningContainer}>
+      <ActivityIndicator size="large" color="#1DB954" />
+
+      <Text style={styles.scanningText}>
+        Analysing your food...
+      </Text>
+    </View>
+  )}
+
+  {/* SCAN RESULT */}
+  {scannedCalories !== null && !scanning && (
+    <View style={styles.scanResult}>
+
+      <Text style={styles.resultLabel}>
+        Estimated Calories
+      </Text>
+
+      <Text style={styles.resultCalories}>
+        {scannedCalories} kcal
+      </Text>
+
+      <TouchableOpacity
+        style={styles.addScannedButton}
+        onPress={addScannedCalories}
+      >
+        <Text style={styles.buttonText}>
+          Add to Daily Intake
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        onPress={() => setScannedCalories(null)}
+      >
+        <Text style={styles.cancelScan}>
+          Discard Result
+        </Text>
+      </TouchableOpacity>
+
+    </View>
+  )}
+
+</View>
+
       <TextInput
         placeholder="500"
          placeholderTextColor="#888"
@@ -183,10 +424,14 @@ export default function Calories() {
         onChangeText={setAddAmount}
         style={styles.input}
       />
+
+      
       <TouchableOpacity
         onPress={addCalories}
         style={[styles.button, { backgroundColor: "#1DB954" }]}
       >
+
+        
         <Text style={styles.buttonText}>Add Calories</Text>
       </TouchableOpacity>
 
@@ -307,6 +552,87 @@ const styles = StyleSheet.create({
     
     backgroundColor: "rgb(255, 255, 255)", 
 },
+
+
+scannerCard: {
+  backgroundColor: "#ffffff",
+  marginTop: 0,
+  marginBottom:20,
+  padding: 0,
+  borderRadius: 20,
+},
+
+scanButton: {
+  flexDirection: "row",
+  alignItems: "center",
+  backgroundColor: "#f3f8f4",
+  padding: 16,
+  borderRadius: 15,
+  marginTop: 5,
+},
+
+cameraIcon: {
+  fontSize: 32,
+  marginRight: 15,
+},
+
+scanTitle: {
+  fontSize: 17,
+  fontWeight: "bold",
+  color: "#222",
+},
+
+
+scanArrow: {
+  fontSize: 28,
+  color: "#1DB954",
+},
+
+scanningContainer: {
+  alignItems: "center",
+  padding: 25,
+},
+
+scanningText: {
+  marginTop: 12,
+  color: "#555",
+  fontSize: 14,
+},
+
+scanResult: {
+  alignItems: "center",
+  backgroundColor: "#f3f8f4",
+  padding: 20,
+  borderRadius: 15,
+  marginTop: 15,
+},
+
+resultLabel: {
+  color: "#666",
+  fontSize: 14,
+},
+
+resultCalories: {
+  fontSize: 38,
+  fontWeight: "bold",
+  color: "#1DB954",
+  marginVertical: 8,
+},
+
+addScannedButton: {
+  backgroundColor: "#1DB954",
+  padding: 13,
+  borderRadius: 20,
+  width: "100%",
+  alignItems: "center",
+  marginTop: 10,
+},
+
+cancelScan: {
+  color: "#888",
+  marginTop: 15,
+},
+
 
 
 });
