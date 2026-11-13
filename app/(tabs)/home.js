@@ -1,6 +1,15 @@
+
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
-import { ImageBackground, Text, TouchableOpacity, View, ScrollView } from "react-native";
+import {
+  ImageBackground,
+  Text,
+  TouchableOpacity,
+  View,
+  ScrollView,
+  StyleSheet,
+  SafeAreaView,
+} from "react-native";
 import { BASE_URL } from "../../config/api";
 import { getToken } from "../../utils/getToken";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -15,9 +24,7 @@ export default function Home() {
       const token = await getToken();
 
       const res = await fetch(`${BASE_URL}/api/calories`, {
-        headers: {
-          "x-auth-token": token,
-        },
+        headers: { "x-auth-token": token },
       });
 
       const data = await res.json();
@@ -27,15 +34,12 @@ export default function Home() {
     }
   };
 
-  //fetch weight details
   const fetchWeight = async () => {
     try {
       const token = await getToken();
 
       const res = await fetch(`${BASE_URL}/api/weight`, {
-        headers: {
-          "x-auth-token": token,
-        },
+        headers: { "x-auth-token": token },
       });
 
       const data = await res.json();
@@ -45,21 +49,25 @@ export default function Home() {
     }
   };
 
-  // read calories api
   useFocusEffect(
     useCallback(() => {
       fetchCalories();
       fetchWeight();
-    }, []),
+    }, [])
   );
 
   const caloriesLeft = calories
     ? Math.max(0, calories.dailyLimit - calories.consumed)
     : 0;
 
+  const calorieGoal = calories?.dailyLimit || 2000;
+  const calorieProgress = calories
+    ? Math.min(calories.consumed / calorieGoal, 1)
+    : 0;
+
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long",
-    month: "short",
+    month: "long",
     day: "numeric",
   });
 
@@ -69,216 +77,524 @@ export default function Home() {
       style={styles.background}
       resizeMode="cover"
     >
-      <ScrollView style={styles.test}>
-      <View style={styles.heading}>
-        <Text style={styles.header}>Welcome Home</Text>
-      </View>
-      
-      <View style={styles.container}>
-        
-        {/* calorie ring */}
-        <View style={styles.circleContainer}>
-          <TouchableOpacity
-            onPress={() => router.push("/(tabs)/calories")}
-            style={styles.circle}
-          >
-            <Text style={styles.caloriesNumber}>{caloriesLeft}</Text>
-            <Text style={styles.caloriesUnit}>kcal</Text>
-            <Text style={styles.caloriesLeft}>Left</Text>
-          </TouchableOpacity>
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
 
-          {/* day */}
-          <Text style={styles.dayLabel}>{today}</Text>
-        </View>
-
-        {/* weight card */}
-        <View style={styles.otherContent}>
-          <TouchableOpacity
-            onPress={() => router.push("/(tabs)/weight")}
-            style={styles.weightCard}
-          >
-            <View style={styles.weightRow}>
-              <Text style={styles.weightLabel}>Current Weight:</Text>
-
-              <Text style={styles.weightValue}>
-                {weight ? `${weight} kg` : "--"}
-              </Text>
+          {/* HEADER */}
+          <View style={styles.header}>
+            <View>
+              
+              <Text style={styles.headerTitle}>Good day.</Text>
+              <Text style={styles.date}>{today}</Text>
             </View>
-          </TouchableOpacity>
 
           
-          <TouchableOpacity
-            onPress={() => router.push("/(tabs)/bodyweight")}
-            style={styles.weightCard}
-          >
-             <View style={styles.weightRow}>
-                <Text style={styles.weightLabel}>Body Fat Percentage</Text>
+          </View>
 
+          {/* CALORIES SECTION */}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Daily overview</Text>
+            <Text style={styles.sectionSubtitle}>TODAY</Text>
+          </View>
+
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => router.push("/(tabs)/calories")}
+            style={styles.calorieCard}
+          >
+            <View style={styles.calorieTop}>
+              <View>
+                <Text style={styles.cardEyebrow}>
+                  CALORIES REMAINING
+                </Text>
+                <View style={styles.calorieNumberRow}>
+                  <Text style={styles.calorieNumber}>
+                    {caloriesLeft.toLocaleString()}
+                  </Text>
+                  <Text style={styles.kcal}>kcal</Text>
+                </View>
+                <Text style={styles.calorieDescription}>
+                  Keep moving towards your goal.
+                </Text>
+              </View>
+
+              <View style={styles.calorieIcon}>
                 <MaterialCommunityIcons
-                  name="chevron-right"
-                  size={30}
+                  name="fire"
+                  size={27}
                   color="#1DB954"
                 />
+              </View>
+            </View>
+
+            {/* PROGRESS BAR */}
+            <View style={styles.progressBackground}>
+              <View
+                style={[
+                  styles.progressFill,
+                  { width: `${calorieProgress * 100}%` },
+                ]}
+              />
+            </View>
+
+            <View style={styles.calorieFooter}>
+              <Text style={styles.progressLabel}>
+                {calories?.consumed || 0} consumed
+              </Text>
+              <Text style={styles.progressLabel}>
+                {calorieGoal} kcal goal
+              </Text>
+            </View>
+
+            <View style={styles.cardLink}>
+              <Text style={styles.linkText}>View calorie details</Text>
+              <MaterialCommunityIcons
+                name="arrow-up-right"
+                size={18}
+                color="#1DB954"
+              />
             </View>
           </TouchableOpacity>
 
+          {/* BODY METRICS */}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Body metrics</Text>
+            <Text style={styles.sectionSubtitle}>YOUR HEALTH</Text>
+          </View>
 
-          {/*bmi and calories calculator*/}
-          <View style={styles.row}>
-          
+          {/* WEIGHT */}
           <TouchableOpacity
-            onPress={() => router.push("/(tabs)/converter")}
-            style={styles.smallCard}
+            activeOpacity={0.8}
+            onPress={() => router.push("/(tabs)/weight")}
+            style={styles.metricCard}
           >
-            
+            <View style={styles.metricIcon}>
+              <MaterialCommunityIcons
+                name="scale-bathroom"
+                size={25}
+                color="#168B4A"
+              />
+            </View>
+
+            <View style={styles.metricInfo}>
+              <Text style={styles.metricLabel}>Current weight</Text>
+              <Text style={styles.metricSubtext}>
+                Your latest measurement
+              </Text>
+            </View>
+
+            <View style={styles.metricRight}>
+              <Text style={styles.metricValue}>
+                {weight ? `${weight}` : "--"}
+              </Text>
+              <Text style={styles.metricUnit}>kg</Text>
+            </View>
+
             <MaterialCommunityIcons
-              name="swap-horizontal"
-              size={50}
-              color="#1DB954"
+              name="chevron-right"
+              size={22}
+              color="#AAB4AD"
             />
-            <Text style={styles.smallCardTitle}>Kcal Converter</Text>
           </TouchableOpacity>
 
-         
+          {/* BODY FAT */}
           <TouchableOpacity
-            onPress={() => router.push("/(tabs)/bmi")}
-            style={styles.smallCard}
+            activeOpacity={0.8}
+            onPress={() => router.push("/(tabs)/bodyweight")}
+            style={styles.metricCard}
           >
-            
+            <View style={styles.metricIcon}>
+              <MaterialCommunityIcons
+                name="human"
+                size={25}
+                color="#168B4A"
+              />
+            </View>
+
+            <View style={styles.metricInfo}>
+              <Text style={styles.metricLabel}>Body composition</Text>
+              <Text style={styles.metricSubtext}>
+                Track your body fat percentage
+              </Text>
+            </View>
+
             <MaterialCommunityIcons
-              name="scale-bathroom"
-              size={50}
-              color="#1DB954"
+              name="chevron-right"
+              size={22}
+              color="#AAB4AD"
             />
-            <Text style={styles.smallCardTitle}>Calculate BMI</Text>
           </TouchableOpacity>
-        </View>
-        </View>
-      </View>
-      </ScrollView>
+
+          {/* TOOLS */}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Health tools</Text>
+            <Text style={styles.sectionSubtitle}>QUICK ACCESS</Text>
+          </View>
+
+          <View style={styles.toolsRow}>
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => router.push("/(tabs)/converter")}
+              style={styles.toolCard}
+            >
+              <View style={styles.toolIcon}>
+                <MaterialCommunityIcons
+                  name="swap-horizontal"
+                  size={27}
+                  color="#168B4A"
+                />
+              </View>
+
+              <Text style={styles.toolTitle}>Kcal converter</Text>
+              <Text style={styles.toolDescription}>
+                Convert energy units
+              </Text>
+
+              <View style={styles.toolArrow}>
+                <MaterialCommunityIcons
+                  name="arrow-up-right"
+                  size={18}
+                  color="#168B4A"
+                />
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => router.push("/(tabs)/bmi")}
+              style={styles.toolCard}
+            >
+              <View style={styles.toolIcon}>
+                <MaterialCommunityIcons
+                  name="human"
+                  size={27}
+                  color="#168B4A"
+                />
+              </View>
+
+              <Text style={styles.toolTitle}>BMI calculator</Text>
+              <Text style={styles.toolDescription}>
+                Check your BMI
+              </Text>
+
+              <View style={styles.toolArrow}>
+                <MaterialCommunityIcons
+                  name="arrow-up-right"
+                  size={18}
+                  color="#168B4A"
+                />
+              </View>
+            </TouchableOpacity>
+
+          </View>
+
+          <Text style={styles.bottomText}>
+            
+          </Text>
+
+        </ScrollView>
+      </SafeAreaView>
     </ImageBackground>
   );
 }
 
-const styles = {
+const styles = StyleSheet.create({
   background: {
     flex: 1,
   },
-  heading: {
-    paddingHorizontal: 20,
-    marginTop: 75,
-  },
-  header: {
-    textAlign: 'left',
-    fontSize: 25,
-    fontWeight: "700",
-    letterSpacing: 1,
-    color: "#000",
-  },
- 
-  container: {
-    flex: 1,
-    //backgroundColor: "#f5f5f5",
-    alignItems: "center",
-  },
-  circleContainer: {
-    alignItems: "center",
-    marginTop: 20,
-    shadowColor: "#000000",
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.15,
-  shadowRadius: 6,
-    
-  },
-  circle: {
-    width: 240,
-    height: 240,
-    borderRadius: 120,
-    borderWidth: 4,
-    borderColor: "#1DB954",
-    backgroundColor: "#ffffff",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  caloriesNumber: {
-    color: "#000000",
-    fontSize: 36,
-    fontWeight: "bold",
-  },
-  caloriesUnit: {
-    color: "#aaa",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  caloriesLeft: {
-    color: "#1DB954",
-    fontSize: 16,
-    marginTop: 4,
-    fontWeight: "bold",
-  },
-  dayLabel: {
-    color: "#6e6e6e",
-    fontSize: 20,
-    fontWeight: "500",
-    marginTop: 12,
-  },
-  otherContent: {
-    marginTop: 10,
-    width: "100%",
-    paddingHorizontal: 20,
-    alignItems: "center",
-  },
-  weightCard: {
-    width: 360,
-    height: 70,
-    padding: 15,
-    backgroundColor: "#ffffff",
 
-    borderWidth: 2,
-    borderColor: "#1DB954", 
-    justifyContent: "center",
-    borderRadius: 20,
-    marginTop: 15,
-   shadowColor: "#00000070",
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.15,
-  shadowRadius: 6,
+  safeArea: {
+    flex: 1,
   },
-  weightRow: {
+
+  scrollContent: {
+    paddingHorizontal: 22,
+    paddingTop: 20,
+    paddingBottom: 40,
+  },
+
+  // HEADER
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 32,
+    marginTop:30,
+  },
+
+  greeting: {
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 2,
+    color: "#168B4A",
+    marginBottom: 7,
+  },
+
+  headerTitle: {
+    fontSize: 34,
+    fontWeight: "800",
+    color: "#17251C",
+    letterSpacing: -1,
+  },
+
+  date: {
+    fontSize: 14,
+    color: "#68776D",
+    marginTop: 5,
+    fontWeight: "500",
+  },
+
+  
+
+  // SECTION HEADINGS
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 14,
+    marginTop: 4,
+  },
+
+  sectionTitle: {
+    fontSize: 19,
+    fontWeight: "800",
+    color: "#17251C",
+    letterSpacing: -0.4,
+  },
+
+  sectionSubtitle: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: "#829087",
+    letterSpacing: 1.2,
+  },
+
+  // CALORIE CARD
+  calorieCard: {
+    backgroundColor: "rgba(255,255,255,0.94)",
+    borderRadius: 26,
+    padding: 22,
+    marginBottom: 30,
+
+    shadowColor: "#183B26",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 15,
+    elevation: 4,
+
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.9)",
+  },
+
+  calorieTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+
+  cardEyebrow: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: "#819087",
+    letterSpacing: 1.5,
+  },
+
+  calorieNumberRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    marginTop: 8,
+  },
+
+  calorieNumber: {
+    fontSize: 47,
+    fontWeight: "800",
+    color: "#17251C",
+    letterSpacing: -2,
+  },
+
+  kcal: {
+    fontSize: 15,
+    color: "#829087",
+    fontWeight: "600",
+    marginLeft: 7,
+  },
+
+  calorieDescription: {
+    fontSize: 12,
+    color: "#89958D",
+    marginTop: 3,
+  },
+
+  calorieIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: "#EAF7EE",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  progressBackground: {
+    height: 8,
+    backgroundColor: "#EAF0EB",
+    borderRadius: 10,
+    marginTop: 24,
+    overflow: "hidden",
+  },
+
+  progressFill: {
+    height: "100%",
+    backgroundColor: "#1DB954",
+    borderRadius: 10,
+  },
+
+  calorieFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 10,
+  },
+
+  progressLabel: {
+    fontSize: 11,
+    color: "#849087",
+    fontWeight: "600",
+  },
+
+  cardLink: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 100,
+    justifyContent: "space-between",
+    borderTopWidth: 1,
+    borderTopColor: "#EDF1ED",
+    marginTop: 19,
+    paddingTop: 15,
   },
-  weightLabel: { color: "#000000", fontSize: 20, fontWeight: "bold" },
-  weightValue: { color: "#000000", fontSize: 20, fontWeight: "bold" },
-  ///////////////////////////
 
-  row: {
-  flexDirection: "row",
-  marginTop: 20,
-  gap: 10,
-},
+  linkText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#168B4A",
+  },
 
-smallCard: {
-  flex: 1,
-  backgroundColor: "#ffffff",
-  paddingVertical: 30,
-  borderRadius: 15,
-  borderWidth: 2,
-  borderColor: "#1db954", 
-  alignItems: "center",
-  justifyContent: "center",
-  shadowColor: "#00000070",
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.15,
-  shadowRadius: 6,
-},
+  // METRIC CARDS
+  metricCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.94)",
+    borderRadius: 20,
+    padding: 15,
+    marginBottom: 12,
+    minHeight: 82,
 
-smallCardTitle: {
-  color: "#000000",
-  fontSize: 16,
-  fontWeight: "bold",
-  
-},
+    shadowColor: "#183B26",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+  },
 
-};
+  metricIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 15,
+    backgroundColor: "#EAF7EE",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 13,
+  },
+
+  metricInfo: {
+    flex: 1,
+  },
+
+  metricLabel: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#26352B",
+  },
+
+  metricSubtext: {
+    fontSize: 11,
+    color: "#929D95",
+    marginTop: 4,
+  },
+
+  metricRight: {
+    alignItems: "flex-end",
+    marginRight: 8,
+  },
+
+  metricValue: {
+    fontSize: 19,
+    fontWeight: "800",
+    color: "#17251C",
+  },
+
+  metricUnit: {
+    fontSize: 10,
+    color: "#89958D",
+    fontWeight: "600",
+  },
+
+  // HEALTH TOOLS
+  toolsRow: {
+    flexDirection: "row",
+    gap: 13,
+  },
+
+  toolCard: {
+    flex: 1,
+    backgroundColor: "rgba(255,255,255,0.94)",
+    borderRadius: 22,
+    padding: 17,
+    minHeight: 165,
+
+    shadowColor: "#183B26",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+
+  toolIcon: {
+    width: 45,
+    height: 45,
+    borderRadius: 15,
+    backgroundColor: "#EAF7EE",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 18,
+  },
+
+  toolTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#26352B",
+  },
+
+  toolDescription: {
+    fontSize: 11,
+    color: "#89958D",
+    marginTop: 5,
+  },
+
+  toolArrow: {
+    position: "absolute",
+    top: 17,
+    right: 15,
+  },
+
+  bottomText: {
+    textAlign: "center",
+    marginTop: 32,
+    marginBottom: 32,
+    fontSize: 12,
+    color: "#708075",
+    fontWeight: "600",
+    letterSpacing: 0.5,
+  },
+});

@@ -1,13 +1,64 @@
+
 import { useRouter } from "expo-router";
 import {
   Image,
   ImageBackground,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+
+const COLORS = {
+  background: "#101713",
+  card: "#202D24",
+  cardLight: "#263A2C",
+  primary: "#1DB954",
+  white: "#FFFFFF",
+  muted: "#A3B2A7",
+  border: "#344438",
+};
+
+const muscleGroups = [
+  {
+    name: "Chest",
+    subtitle: "Upper body strength",
+    image: require("../../assets/workouts/chest/chestlogo.png"),
+    route: "/(tabs)/muscles/chest",
+  },
+  {
+    name: "Core",
+    subtitle: "Abs & stability",
+    image: require("../../assets/workouts/core/corelogo.png"),
+    route: "/(tabs)/muscles/core",
+  },
+  {
+    name: "Biceps",
+    subtitle: "Build arm strength",
+    image: require("../../assets/workouts/biceps/biceplogo.png"),
+    route: "/(tabs)/muscles/biceps",
+  },
+  {
+    name: "Shoulders",
+    subtitle: "Upper body power",
+    image: require("../../assets/workouts/shoulders/shoulderlogo.png"),
+    route: "/(tabs)/muscles/shoulders",
+  },
+  {
+    name: "Quads",
+    subtitle: "Leg day essentials",
+    image: require("../../assets/workouts/quads/quadlogo.png"),
+    route: "/(tabs)/muscles/quads",
+  },
+  {
+    name: "Calves",
+    subtitle: "Lower body strength",
+    image: require("../../assets/workouts/calves/calvelogo.png"),
+    route: "/(tabs)/muscles/calves",
+  },
+];
 
 export default function Workouts() {
   const router = useRouter();
@@ -18,83 +69,78 @@ export default function Workouts() {
       style={styles.background}
       resizeMode="cover"
     >
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Workouts</Text>
+      <StatusBar barStyle="light-content" />
 
-        {/* Row 1 */}
-        <View style={styles.row}>
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() => router.push("/(tabs)/muscles/chest")}
-          >
-            <Image
-              source={require("../../assets/workouts/chest/chestlogo.png")}
-              style={styles.image}
-            />
-            <Text style={styles.label}>Chest</Text>
-          </TouchableOpacity>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* HEADER */}
+        <View style={styles.header}>
 
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() => router.push("/(tabs)/muscles/core")}
-          >
-            <Image
-              source={require("../../assets/workouts/core/corelogo.png")}
-              style={styles.image}
-            />
-            <Text style={styles.label}>Core</Text>
-          </TouchableOpacity>
+          <Text style={styles.title}>
+            Let's get{"\n"}
+            <Text style={styles.titleAccent}>stronger.</Text>
+          </Text>
+
+          
         </View>
 
-        {/* Row 2 */}
-        <View style={styles.row}>
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() => router.push("/(tabs)/muscles/biceps")}
-          >
-            <Image
-              source={require("../../assets/workouts/biceps/biceplogo.png")}
-              style={styles.image}
-            />
-            <Text style={styles.label}>Biceps</Text>
-          </TouchableOpacity>
+        {/* SECTION HEADER */}
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.sectionTitle}>Muscle groups</Text>
+            <Text style={styles.sectionSubtitle}>
+              Select an area to explore exercises
+            </Text>
+          </View>
 
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() => router.push("/(tabs)/muscles/shoulders")}
-          >
-            <Image
-              source={require("../../assets/workouts/shoulders/shoulderlogo.png")}
-              style={styles.image}
-            />
-            <Text style={styles.label}>Shoulders</Text>
-          </TouchableOpacity>
+          <View style={styles.countBadge}>
+            <Text style={styles.countText}>06 GROUPS</Text>
+          </View>
         </View>
 
-        {/* Row 3 */}
-        <View style={styles.row}>
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() => router.push("/(tabs)/muscles/quads")}
-          >
-            <Image
-              source={require("../../assets/workouts/quads/quadlogo.png")}
-              style={styles.image}
-            />
-            <Text style={styles.label}>Quads</Text>
-          </TouchableOpacity>
+        {/* WORKOUT GRID */}
+        <View style={styles.grid}>
+          {muscleGroups.map((muscle) => (
+            <TouchableOpacity
+              key={muscle.name}
+              style={styles.card}
+              activeOpacity={0.85}
+              onPress={() => router.push(muscle.route)}
+            >
+              <View style={styles.imageContainer}>
+                <Image
+                  source={muscle.image}
+                  style={styles.image}
+                  resizeMode="cover"
+                />
 
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() => router.push("/(tabs)/muscles/calves")}
-          >
-            <Image
-              source={require("../../assets/workouts/calves/calvelogo.png")}
-              style={styles.image}
-            />
-            <Text style={styles.label}> Calves</Text>
-          </TouchableOpacity>
+                <View style={styles.imageOverlay}>
+                  <Text style={styles.imageLabel}>EXPLORE</Text>
+                </View>
+              </View>
+
+              <View style={styles.cardInfo}>
+                <View style={styles.cardText}>
+                  <Text style={styles.cardTitle}>{muscle.name}</Text>
+                  <Text style={styles.cardSubtitle}>
+                    {muscle.subtitle}
+                  </Text>
+                </View>
+
+                <View style={styles.arrowContainer}>
+                  <Text style={styles.arrow}>↗</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          ))}
         </View>
+        <View style={styles.texter}>
+                  
+                </View>
+
+       
       </ScrollView>
     </ImageBackground>
   );
@@ -103,51 +149,173 @@ export default function Workouts() {
 const styles = StyleSheet.create({
   background: {
     flex: 1,
+    backgroundColor: COLORS.background,
   },
 
   container: {
     flexGrow: 1,
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 35,
+  },
+
+  // HEADER
+  header: {
+    marginBottom: 10,
+  },
+
+  eyebrow: {
+    color: COLORS.primary,
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 2,
+    marginBottom: 12,
   },
 
   title: {
-    fontSize: 25,
-    fontWeight: "500",
-    letterSpacing: 1,
-    color: "#000",
-    marginTop: 50,
-    marginBottom: 20,
+    color: COLORS.white,
+    fontSize: 36,
+    fontWeight: "900",
+    lineHeight: 42,
+    letterSpacing: -1.2,
   },
 
-  row: {
+  titleAccent: {
+    color: COLORS.primary,
+  },
+
+  subtitle: {
+    color: COLORS.muted,
+    fontSize: 13,
+    lineHeight: 20,
+    marginTop: 12,
+    maxWidth: 300,
+  },
+
+  // SECTION HEADER
+  sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 15,
+    alignItems: "center",
+    marginBottom: 18,
+  },
+
+  sectionTitle: {
+    color: COLORS.white,
+    fontSize: 18,
+    fontWeight: "800",
+  },
+
+  sectionSubtitle: {
+    color: "#555353",
+    fontSize: 11,
+    marginTop: 5,
+  },
+
+  countBadge: {
+    backgroundColor: COLORS.cardLight,
+    borderRadius: 20,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+
+  countText: {
+    color: COLORS.primary,
+    fontSize: 9,
+    fontWeight: "800",
+    letterSpacing: 1,
+  },
+
+  // WORKOUT GRID
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
   },
 
   card: {
-    flex: 1,
-    backgroundColor: "#ffffff",
+    width: "48%",
+    backgroundColor: COLORS.card,
     borderRadius: 20,
-    padding: 10,
-    marginHorizontal: 5,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 4,
+    padding: 9,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    overflow: "hidden",
+  },
+
+  imageContainer: {
+    position: "relative",
   },
 
   image: {
     width: "100%",
-    height: 150,
-    borderRadius: 15,
-    marginBottom: 10,
+    height: 130,
+    borderRadius: 13,
+    backgroundColor: COLORS.cardLight,
   },
 
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#000",
+  imageOverlay: {
+    position: "absolute",
+    bottom: 8,
+    right: 8,
+    backgroundColor: "rgba(16, 23, 19, 0.85)",
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
   },
+
+  imageLabel: {
+    color: COLORS.primary,
+    fontSize: 8,
+    fontWeight: "800",
+    letterSpacing: 1,
+  },
+
+  cardInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 3,
+    paddingTop: 13,
+    paddingBottom: 5,
+  },
+
+  cardText: {
+    flex: 1,
+    paddingRight: 4,
+  },
+
+  cardTitle: {
+    color: COLORS.white,
+    fontSize: 15,
+    fontWeight: "800",
+  },
+
+  cardSubtitle: {
+    color: COLORS.muted,
+    fontSize: 9,
+    marginTop: 5,
+  },
+
+  arrowContainer: {
+    backgroundColor: "#344A31",
+    width: 30,
+    height: 30,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  arrow: {
+    color: COLORS.primary,
+    fontSize: 18,
+    fontWeight: "800",
+  },
+texter: {
+    marginBottom:90,
+  },
+
 });

@@ -293,7 +293,13 @@ export default function Chat() {
             <View style={styles.onlineDot} />
             <Text style={styles.status}>Online</Text>
           </View>
+          <TouchableOpacity style={styles.clearSessionButton}>
+  <Ionicons name="trash-outline" size={20} color="#E53935" />
+</TouchableOpacity>
+
+          
         </View>
+        
 
         {planType && (
           <TouchableOpacity
@@ -304,6 +310,7 @@ export default function Chat() {
             <Ionicons name="add-circle-outline" size={25} color="#4CAF50" />
           </TouchableOpacity>
         )}
+        
       </View>
 
       {/* Messages */}
@@ -674,4 +681,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+
+  clearSessionButton: {
+  width: 40,
+  height: 40,
+  borderRadius: 20,
+  backgroundColor: "#FFF1F1",
+  alignItems: "center",
+  justifyContent: "center",
+  position: "absolute",
+  right: 16,
+  top: 5,
+},
+clearSessionText: {
+  color: "#E53935",
+  fontSize: 11,
+  fontWeight: "700",
+},
 });
