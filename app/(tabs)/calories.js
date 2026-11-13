@@ -135,25 +135,28 @@ export default function Calories() {
   };
 
   // Select food image
-  const selectFood = async () => {
-    const permission =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
+  
+const selectFood = async () => {
+  const permission =
+    await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-    if (!permission.granted) {
-      Alert.alert("Permission Required", "Gallery access is needed.");
-      return;
-    }
+  if (!permission.granted) {
+    Alert.alert("Permission Required", "Gallery access is needed.");
+    return;
+  }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: false,
-      quality: 0.7,
-    });
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ["images"],
+    allowsEditing: false,
+    quality: 0.7,
+    legacy: true, // Use legacy Android gallery picker
+  });
 
-    if (!result.canceled) {
-      uploadFoodImage(result.assets[0]);
-    }
-  };
+  if (!result.canceled) {
+    uploadFoodImage(result.assets[0]);
+  }
+};
+
 
   // Upload image to AI
   const uploadFoodImage = async (image) => {

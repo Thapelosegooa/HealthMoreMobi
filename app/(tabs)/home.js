@@ -386,8 +386,8 @@ const styles = StyleSheet.create({
     shadowRadius: 15,
     elevation: 4,
 
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.9)",
+    borderWidth: 3,
+    borderColor: "#168B4A",
   },
 
   calorieTop: {
@@ -495,6 +495,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 2,
+    borderWidth: 3,
+    borderColor: "#168B4A",
   },
 
   metricIcon: {
@@ -558,6 +560,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 2,
+    borderWidth: 3,
+    borderColor: "#168B4A",
   },
 
   toolIcon: {
