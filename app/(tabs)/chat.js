@@ -1,13 +1,16 @@
+
 import { Ionicons } from "@expo/vector-icons";
 import * as SecureStore from "expo-secure-store";
 import { useEffect, useRef, useState } from "react";
-import { BASE_URL } from "../../config/api";
 
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   KeyboardAvoidingView,
+  Modal,
   Platform,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -15,61 +18,86 @@ import {
   View,
 } from "react-native";
 
+import { BASE_URL } from "../../config/api";
+
 export default function Chat() {
+  // Current conversation
   const [messages, setMessages] = useState([]);
+  const [chatId, setChatId] = useState(null);
+  const [chatTitle, setChatTitle] = useState("");
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(false);
-
+  // Chat settings
   const [planType, setPlanType] = useState(null);
-
-  const [conversationHistory, setConversationHistory] = useState([]);
-
   const [inputMessage, setInputMessage] = useState("");
 
-  const [lastMessage, setLastMessage] = useState(null);
+  // Loading and errors
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingChat, setIsLoadingChat] = useState(false);
+  const [error, setError] = useState(null);
+  const [pendingMessage, setPendingMessage] = useState(null);
+
+  // Conversation history
+  const [conversationHistory, setConversationHistory] = useState([]);
+  const [historyVisible, setHistoryVisible] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
   const flatListRef = useRef(null);
 
-  // Load initial greeting when chat opens
+  // --------------------------------------------------
+  // API HELPER
+  // --------------------------------------------------
+
+  const apiRequest = async (endpoint, options = {}) => {
+    const token = await SecureStore.getItemAsync("token");
+
+    if (!token) {
+      throw new Error("Authentication required");
+    }
+
+    const response = await fetch(`${BASE_URL}/api/ai${endpoint}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        "x-auth-token": token,
+        ...options.headers,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.msg || "Something went wrong");
+    }
+
+    return data;
+  };
+
+  // --------------------------------------------------
+  // MESSAGE HELPERS
+  // --------------------------------------------------
+
+  const formatMessages = (backendMessages = []) => {
+    return backendMessages.map((item, index) => ({
+      id: item._id || `${item.createdAt || "message"}-${index}`,
+      text: item.content,
+      sender: item.role === "user" ? "user" : "bot",
+      createdAt: item.createdAt,
+    }));
+  };
+
+  // --------------------------------------------------
+  // INITIAL GREETING
+  // --------------------------------------------------
+
   useEffect(() => {
     loadGreeting();
   }, []);
 
-  // Scroll to latest message
-  useEffect(() => {
-    if (messages.length > 0) {
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({
-          animated: true,
-        });
-      }, 100);
-    }
-  }, [messages, isLoading, error]);
-
-  // Get initial greeting from backend
   const loadGreeting = async () => {
     try {
-      setError(false);
+      setError(null);
 
-      const token = await SecureStore.getItemAsync("token");
-
-      if (!token) {
-        throw new Error("Authentication required");
-      }
-
-      const response = await fetch(`${BASE_URL}/api/ai/greeting`, {
-        method: "GET",
-        headers: {
-          "x-auth-token": token,
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.msg || "Could not load greeting");
-      }
+      const data = await apiRequest("/greeting");
 
       setMessages([
         {
@@ -80,110 +108,190 @@ export default function Chat() {
       ]);
     } catch (err) {
       console.error("Greeting error:", err);
-      setError(true);
+      setError(err.message);
     }
   };
 
-  // Send message to backend
+  // --------------------------------------------------
+  // SCROLL TO LATEST MESSAGE
+  // --------------------------------------------------
 
-  const sendMessage = async (message, selectedPlan = planType) => {
-    if (!message.trim() || isLoading || !selectedPlan) {
+  useEffect(() => {
+    if (messages.length > 0) {
+      const timer = setTimeout(() => {
+        flatListRef.current?.scrollToEnd({
+          animated: true,
+        });
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [messages, isLoading, error]);
+
+  // --------------------------------------------------
+  // GET CONVERSATION HISTORY
+  // --------------------------------------------------
+
+  const fetchConversationHistory = async () => {
+    try {
+      setIsLoadingHistory(true);
+
+      const data = await apiRequest("/history");
+
+      setConversationHistory(data.chats || []);
+    } catch (err) {
+      console.error("History error:", err);
+      Alert.alert("Error", err.message);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  const openHistory = () => {
+    setHistoryVisible(true);
+    fetchConversationHistory();
+  };
+
+  // --------------------------------------------------
+  // OPEN EXISTING CONVERSATION
+  // --------------------------------------------------
+
+  const openConversation = async (selectedChatId) => {
+    if (isLoading || isLoadingChat) return;
+
+    try {
+      setIsLoadingChat(true);
+      setError(null);
+      setHistoryVisible(false);
+
+      const data = await apiRequest(
+        `/history/${selectedChatId}`
+      );
+
+      const chat = data.chat;
+
+      setChatId(chat._id);
+      setChatTitle(chat.title);
+      setPlanType(chat.planType);
+
+      setMessages(formatMessages(chat.messages));
+
+      setPendingMessage(null);
+      setInputMessage("");
+    } catch (err) {
+      console.error("Open conversation error:", err);
+      Alert.alert("Error", err.message);
+    } finally {
+      setIsLoadingChat(false);
+    }
+  };
+
+  // --------------------------------------------------
+  // SEND MESSAGE / CREATE CONVERSATION
+  // --------------------------------------------------
+
+  const sendMessage = async (
+    message,
+    selectedPlan = planType,
+    existingChatId = chatId,
+    isRetry = false
+  ) => {
+    const trimmedMessage = message.trim();
+
+    if (
+      !trimmedMessage ||
+      isLoading ||
+      !selectedPlan
+    ) {
       return;
     }
 
-    setLastMessage({
-      message,
-      planType: selectedPlan,
-    });
-
-    setError(false);
+    setError(null);
     setIsLoading(true);
 
-    const userMessage = {
-      id: `${Date.now()}-user`,
-      text: message,
-      sender: "user",
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
+    // Add optimistic user message only once
+    if (!isRetry) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `${Date.now()}-user`,
+          text: trimmedMessage,
+          sender: "user",
+        },
+      ]);
+    }
 
     try {
-      const token = await SecureStore.getItemAsync("token");
+      // IMPORTANT:
+      // The backend retrieves conversation history
+      // using chatId. We no longer send history.
 
-      if (!token) {
-        throw new Error("Authentication required");
-      }
-
-      // Convert history to OpenAI/Groq format
-      const history = conversationHistory.map((item) => ({
-        role: item.role,
-        content: item.content,
-      }));
-
-      const response = await fetch(`${BASE_URL}/api/ai/chat`, {
+      const data = await apiRequest("/chat", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-auth-token": token,
-        },
         body: JSON.stringify({
           planType: selectedPlan,
-          message,
-          history: conversationHistory,
+          message: trimmedMessage,
+          chatId: existingChatId,
         }),
       });
 
-      const data = await response.json();
+      // Save returned conversation ID
+      setChatId(data.chatId);
+      setChatTitle(data.title);
 
-      if (!response.ok) {
-        throw new Error(data.msg || "AI request failed");
-      }
+      // Backend returns the complete conversation
+      setMessages(formatMessages(data.messages));
 
-      const botMessage = {
-        id: `${Date.now()}-bot`,
-        text: data.response,
-        sender: "bot",
-      };
+      setPendingMessage(null);
+      setError(null);
 
-      setMessages((prev) => [...prev, botMessage]);
+      // Refresh sidebar/history data
+      fetchConversationHistory();
 
-      // Save history in Groq-compatible format
-      setConversationHistory((prev) => [
-        ...prev,
-        {
-          role: "user",
-          content: message.trim(),
-        },
-        {
-          role: "assistant",
-          content: data.response,
-        },
-      ]);
     } catch (err) {
       console.error("Chat error:", err);
-      setError(true);
+
+      setError(err.message);
+
+      // Keep failed message for retry
+      setPendingMessage({
+        message: trimmedMessage,
+        planType: selectedPlan,
+        chatId: existingChatId,
+      });
+
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Select workout or meal plan
+  // --------------------------------------------------
+  // SELECT WORKOUT OR MEAL PLAN
+  // --------------------------------------------------
+
   const selectPlan = (selectedPlan) => {
     if (isLoading) return;
 
     setPlanType(selectedPlan);
+    setChatId(null);
+    setChatTitle("");
+    setMessages([]);
+    setInputMessage("");
+    setPendingMessage(null);
+    setError(null);
 
-    // Start a fresh conversation
-    setConversationHistory([]);
-    setError(false);
+    const initialMessage =
+      selectedPlan === "workout"
+        ? "Build Workout Plan"
+        : "Build Meal Plan";
 
-    const message =
-      selectedPlan === "workout" ? "Build Workout Plan" : "Build Meal Plan";
-
-    sendMessage(message, selectedPlan);
+    sendMessage(initialMessage, selectedPlan, null);
   };
 
-  // Send follow-up message
+  // --------------------------------------------------
+  // SEND FOLLOW-UP MESSAGE
+  // --------------------------------------------------
+
   const handleSend = () => {
     const message = inputMessage.trim();
 
@@ -196,228 +304,429 @@ export default function Chat() {
     sendMessage(message);
   };
 
-  // Retry failed request without duplicating user message
+  // --------------------------------------------------
+  // RETRY FAILED MESSAGE
+  // --------------------------------------------------
 
-  const retryMessage = async () => {
-    if (!lastMessage || isLoading) return;
+  const retryMessage = () => {
+    if (!pendingMessage || isLoading) return;
 
-    const { message, planType: selectedPlan } = lastMessage;
+    const {
+      message,
+      planType: selectedPlan,
+      chatId: failedChatId,
+    } = pendingMessage;
 
-    setError(false);
-    setIsLoading(true);
-
-    try {
-      const token = await SecureStore.getItemAsync("token");
-
-      if (!token) {
-        throw new Error("Authentication required");
-      }
-
-      const response = await fetch(`${BASE_URL}/api/ai/chat`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-auth-token": token,
-        },
-        body: JSON.stringify({
-          planType: selectedPlan,
-          message,
-          history: conversationHistory,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.msg || "AI request failed");
-      }
-
-      const botMessage = {
-        id: `${Date.now()}-bot`,
-        text: data.response,
-        sender: "bot",
-      };
-
-      setMessages((prev) => [...prev, botMessage]);
-
-      setConversationHistory((prev) => [
-        ...prev,
-        {
-          role: "user",
-          content: message,
-        },
-        {
-          role: "assistant",
-          content: data.response,
-        },
-      ]);
-
-      setLastMessage(null);
-    } catch (err) {
-      console.error("Retry error:", err);
-      setError(true);
-    } finally {
-      setIsLoading(false);
-    }
+    sendMessage(
+      message,
+      selectedPlan,
+      failedChatId,
+      true
+    );
   };
 
-  // Start a new conversation
-  const startNewChat = () => {
-    if (isLoading) return;
+  // --------------------------------------------------
+  // START NEW CONVERSATION
+  // --------------------------------------------------
 
+  const startNewChat = () => {
+    if (isLoading || isLoadingChat) return;
+
+    setChatId(null);
+    setChatTitle("");
     setPlanType(null);
-    setConversationHistory([]);
     setInputMessage("");
-    setLastMessage(null);
-    setError(false);
+    setPendingMessage(null);
+    setError(null);
+
+    setMessages([]);
 
     loadGreeting();
   };
+
+  // --------------------------------------------------
+  // DELETE INDIVIDUAL CONVERSATION
+  // --------------------------------------------------
+
+  const deleteConversation = (selectedChatId) => {
+    Alert.alert(
+      "Delete conversation",
+      "Are you sure you want to delete this conversation? This action cannot be undone.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await apiRequest(`/history/${selectedChatId}`, {
+                method: "DELETE",
+              });
+
+              setConversationHistory((prev) =>
+                prev.filter(
+                  (chat) => chat._id !== selectedChatId
+                )
+              );
+
+              // If deleting the currently open chat
+              if (chatId === selectedChatId) {
+                startNewChat();
+              }
+
+            } catch (err) {
+              Alert.alert("Error", err.message);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // --------------------------------------------------
+  // DELETE ALL CONVERSATIONS
+  // --------------------------------------------------
+
+  const deleteAllConversations = () => {
+    if (conversationHistory.length === 0) return;
+
+    Alert.alert(
+      "Delete all conversations",
+      "Are you sure you want to delete all your chat history? This cannot be undone.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete All",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await apiRequest("/history", {
+                method: "DELETE",
+              });
+
+              setConversationHistory([]);
+
+              startNewChat();
+
+              setHistoryVisible(false);
+
+            } catch (err) {
+              Alert.alert("Error", err.message);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // --------------------------------------------------
+  // FORMAT HISTORY DATE
+  // --------------------------------------------------
+
+  const formatDate = (date) => {
+    if (!date) return "";
+
+    const value = new Date(date);
+
+    return value.toLocaleDateString("en-ZA", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  // --------------------------------------------------
+  // RENDER MESSAGE
+  // --------------------------------------------------
+
+  const renderMessage = ({ item }) => {
+    const isBot = item.sender === "bot";
+
+    return (
+      <View
+        style={[
+          styles.messageBubble,
+          isBot ? styles.botMessage : styles.userMessage,
+        ]}
+      >
+        <Text
+          style={[
+            styles.messageText,
+            isBot
+              ? styles.botMessageText
+              : styles.userMessageText,
+          ]}
+        >
+          {item.text}
+        </Text>
+      </View>
+    );
+  };
+
+  // --------------------------------------------------
+  // MAIN UI
+  // --------------------------------------------------
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
     >
-      {/* Header */}
+
+      {/* HEADER */}
+
       <View style={styles.header}>
+
         <View style={styles.botIcon}>
-          <Ionicons name="fitness" size={27} color="#4CAF50" />
+          <Ionicons
+            name="fitness"
+            size={26}
+            color="#4CAF50"
+          />
         </View>
 
-        <View style={{ flex: 1 }}>
-          <Text style={styles.title}>WORKOUT ASSISTANT</Text>
+        <View style={styles.headerInfo}>
+          <Text style={styles.title}>
+            FITNESS ASSISTANT
+          </Text>
 
           <View style={styles.statusContainer}>
             <View style={styles.onlineDot} />
-            <Text style={styles.status}>Online</Text>
+            <Text style={styles.status}>
+              AI Assistant
+            </Text>
           </View>
-          <TouchableOpacity style={styles.clearSessionButton}>
-  <Ionicons name="trash-outline" size={20} color="#E53935" />
-</TouchableOpacity>
-
-          
         </View>
-        
+
+        <TouchableOpacity
+          style={styles.headerButton}
+          onPress={openHistory}
+          disabled={isLoading || isLoadingChat}
+        >
+          <Ionicons
+            name="time-outline"
+            size={23}
+            color="#333"
+          />
+        </TouchableOpacity>
 
         {planType && (
           <TouchableOpacity
+            style={styles.headerButton}
             onPress={startNewChat}
-            disabled={isLoading}
-            style={styles.newChatButton}
+            disabled={isLoading || isLoadingChat}
           >
-            <Ionicons name="add-circle-outline" size={25} color="#4CAF50" />
+            <Ionicons
+              name="add-circle-outline"
+              size={25}
+              color="#4CAF50"
+            />
           </TouchableOpacity>
         )}
-        
+
+        {chatId && (
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={() => deleteConversation(chatId)}
+            disabled={isLoading}
+          >
+            <Ionicons
+              name="trash-outline"
+              size={21}
+              color="#E53935"
+            />
+          </TouchableOpacity>
+        )}
+
       </View>
 
-      {/* Messages */}
+      {/* CURRENT CONVERSATION TITLE */}
+
+      {chatTitle !== "" && (
+        <View style={styles.conversationTitleContainer}>
+          <Text
+            style={styles.conversationTitle}
+            numberOfLines={1}
+          >
+            {chatTitle}
+          </Text>
+        </View>
+      )}
+
+      {/* MESSAGES */}
+
       <FlatList
         ref={flatListRef}
         data={messages}
         keyExtractor={(item) => item.id}
+        renderItem={renderMessage}
         contentContainerStyle={styles.messages}
         keyboardShouldPersistTaps="handled"
-        renderItem={({ item }) => (
-          <View
-            style={[
-              styles.messageBubble,
-              item.sender === "bot" ? styles.botMessage : styles.userMessage,
-            ]}
-          >
-            <Text
-              style={[
-                styles.messageText,
-                item.sender === "bot"
-                  ? styles.botMessageText
-                  : styles.userMessageText,
-              ]}
-            >
-              {item.text}
-            </Text>
-          </View>
-        )}
+        showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>
-            {error
-              ? "Unable to connect to the assistant."
-              : "Loading your assistant..."}
-          </Text>
+          <View style={styles.emptyContainer}>
+            {isLoadingChat ? (
+              <ActivityIndicator
+                size="large"
+                color="#4CAF50"
+              />
+            ) : (
+              <Text style={styles.emptyText}>
+                {error || "Loading your assistant..."}
+              </Text>
+            )}
+          </View>
         }
         ListFooterComponent={
           <>
-            {/* Loading */}
+            {/* THINKING INDICATOR */}
+
             {isLoading && (
               <View style={styles.loadingBubble}>
-                <ActivityIndicator size="small" color="#4CAF50" />
+                <ActivityIndicator
+                  size="small"
+                  color="#4CAF50"
+                />
 
-                <Text style={styles.loadingText}>Assistant is thinking...</Text>
+                <Text style={styles.loadingText}>
+                  Assistant is thinking...
+                </Text>
               </View>
             )}
 
-            {/* Error */}
+            {/* ERROR MESSAGE */}
+
             {error && !isLoading && (
               <View style={styles.errorContainer}>
-                <View style={styles.errorIcon}>
-                  <Ionicons
-                    name="cloud-offline-outline"
-                    size={24}
-                    color="#E53935"
-                  />
-                </View>
+
+                <Ionicons
+                  name="cloud-offline-outline"
+                  size={25}
+                  color="#E53935"
+                />
 
                 <View style={styles.errorContent}>
-                  <Text style={styles.errorTitle}>AI assistant is offline</Text>
-
-                  <Text style={styles.errorText}>
-                    We couldn't connect to the assistant. Please try again.
+                  <Text style={styles.errorTitle}>
+                    Unable to send message
                   </Text>
 
-                  <TouchableOpacity
-                    style={styles.retryButton}
-                    onPress={retryMessage}
-                  >
-                    <Ionicons name="refresh" size={16} color="#fff" />
+                  <Text style={styles.errorText}>
+                    {error}
+                  </Text>
 
-                    <Text style={styles.retryText}>Retry</Text>
-                  </TouchableOpacity>
+                  {pendingMessage && (
+                    <TouchableOpacity
+                      style={styles.retryButton}
+                      onPress={retryMessage}
+                    >
+                      <Ionicons
+                        name="refresh"
+                        size={16}
+                        color="#fff"
+                      />
+
+                      <Text style={styles.retryText}>
+                        Retry
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
+
               </View>
             )}
           </>
         }
       />
 
-      {/* Initial Options */}
+      {/* INITIAL OPTIONS */}
+
       {!planType && (
         <View style={styles.options}>
+
+          <Text style={styles.optionsTitle}>
+            What would you like help with?
+          </Text>
+
           <TouchableOpacity
-            style={[styles.optionButton, isLoading && styles.disabledButton]}
+            style={[
+              styles.optionButton,
+              isLoading && styles.disabledButton,
+            ]}
             disabled={isLoading}
             onPress={() => selectPlan("workout")}
           >
-            <Ionicons name="barbell-outline" size={20} color="#222" />
+            <View style={styles.optionIcon}>
+              <Ionicons
+                name="barbell-outline"
+                size={23}
+                color="#4CAF50"
+              />
+            </View>
 
-            <Text style={styles.optionText}>Build Workout Plan</Text>
+            <View style={styles.optionContent}>
+              <Text style={styles.optionText}>
+                Build Workout Plan
+              </Text>
+
+              <Text style={styles.optionDescription}>
+                Get a workout plan based on your fitness goals.
+              </Text>
+            </View>
+
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color="#888"
+            />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.optionButton, isLoading && styles.disabledButton]}
+            style={[
+              styles.optionButton,
+              isLoading && styles.disabledButton,
+            ]}
             disabled={isLoading}
             onPress={() => selectPlan("meal")}
           >
-            <Ionicons name="restaurant-outline" size={20} color="#222" />
+            <View style={styles.optionIcon}>
+              <Ionicons
+                name="restaurant-outline"
+                size={23}
+                color="#4CAF50"
+              />
+            </View>
 
-            <Text style={styles.optionText}>Build Meal Plan</Text>
+            <View style={styles.optionContent}>
+              <Text style={styles.optionText}>
+                Build Meal Plan
+              </Text>
+
+              <Text style={styles.optionDescription}>
+                Get meal recommendations for your goals.
+              </Text>
+            </View>
+
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color="#888"
+            />
           </TouchableOpacity>
+
         </View>
       )}
 
-      {/* Follow-up message input */}
+      {/* MESSAGE INPUT */}
+
       {planType && (
         <View style={styles.inputContainer}>
+
           <TextInput
             style={styles.textInput}
             placeholder="Ask something..."
@@ -432,55 +741,261 @@ export default function Chat() {
           <TouchableOpacity
             style={[
               styles.sendButton,
-              (!inputMessage.trim() || isLoading) && styles.disabledButton,
+              (!inputMessage.trim() || isLoading) &&
+                styles.disabledButton,
             ]}
-            disabled={!inputMessage.trim() || isLoading}
+            disabled={
+              !inputMessage.trim() || isLoading
+            }
             onPress={handleSend}
           >
-            <Ionicons name="send" size={20} color="#fff" />
+            <Ionicons
+              name="send"
+              size={19}
+              color="#fff"
+            />
           </TouchableOpacity>
+
         </View>
       )}
+
+      {/* CONVERSATION HISTORY MODAL */}
+
+      <Modal
+        visible={historyVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setHistoryVisible(false)}
+      >
+
+        <View style={styles.modalContainer}>
+
+          {/* MODAL HEADER */}
+
+          <View style={styles.modalHeader}>
+
+            <View>
+              <Text style={styles.modalTitle}>
+                Your Conversations
+              </Text>
+
+              <Text style={styles.modalSubtitle}>
+                Access your previous AI conversations
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setHistoryVisible(false)}
+            >
+              <Ionicons
+                name="close"
+                size={23}
+                color="#333"
+              />
+            </TouchableOpacity>
+
+          </View>
+
+          {/* HISTORY LIST */}
+
+          {isLoadingHistory ? (
+            <View style={styles.historyLoading}>
+              <ActivityIndicator
+                size="large"
+                color="#4CAF50"
+              />
+
+              <Text style={styles.historyEmptyText}>
+                Loading conversations...
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              data={conversationHistory}
+              keyExtractor={(item) => item._id}
+              contentContainerStyle={styles.historyList}
+              showsVerticalScrollIndicator={false}
+              ListEmptyComponent={
+                <View style={styles.historyEmpty}>
+                  <Ionicons
+                    name="chatbubbles-outline"
+                    size={45}
+                    color="#bbb"
+                  />
+
+                  <Text style={styles.historyEmptyTitle}>
+                    No conversations yet
+                  </Text>
+
+                  <Text style={styles.historyEmptyText}>
+                    Your previous conversations will appear here.
+                  </Text>
+                </View>
+              }
+              renderItem={({ item }) => (
+                <Pressable
+                  style={[
+                    styles.historyItem,
+                    chatId === item._id &&
+                      styles.selectedHistoryItem,
+                  ]}
+                  onPress={() => openConversation(item._id)}
+                >
+
+                  <View style={styles.historyIcon}>
+                    <Ionicons
+                      name={
+                        item.planType === "workout"
+                          ? "barbell-outline"
+                          : "restaurant-outline"
+                      }
+                      size={21}
+                      color="#4CAF50"
+                    />
+                  </View>
+
+                  <View style={styles.historyContent}>
+
+                    <Text
+                      style={styles.historyTitle}
+                      numberOfLines={1}
+                    >
+                      {item.title}
+                    </Text>
+
+                    <Text style={styles.historyDetails}>
+                      {item.planType === "workout"
+                        ? "Workout plan"
+                        : "Meal plan"}
+                      {"  •  "}
+                      {formatDate(item.updatedAt)}
+                    </Text>
+
+                    <Text style={styles.historyMessageCount}>
+                      {item.messages?.length || 0} messages
+                    </Text>
+
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.deleteHistoryButton}
+                    onPress={() =>
+                      deleteConversation(item._id)
+                    }
+                  >
+                    <Ionicons
+                      name="trash-outline"
+                      size={19}
+                      color="#E53935"
+                    />
+                  </TouchableOpacity>
+
+                  <Ionicons
+                    name="chevron-forward"
+                    size={18}
+                    color="#aaa"
+                  />
+
+                </Pressable>
+              )}
+            />
+          )}
+
+          {/* DELETE ALL HISTORY */}
+
+          {conversationHistory.length > 0 && (
+            <TouchableOpacity
+              style={styles.deleteAllButton}
+              onPress={deleteAllConversations}
+            >
+              <Ionicons
+                name="trash-outline"
+                size={18}
+                color="#E53935"
+              />
+
+              <Text style={styles.deleteAllText}>
+                Delete all conversations
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {/* NEW CHAT */}
+
+          <TouchableOpacity
+            style={styles.newChatModalButton}
+            onPress={() => {
+              setHistoryVisible(false);
+              startNewChat();
+            }}
+          >
+            <Ionicons
+              name="add"
+              size={21}
+              color="#fff"
+            />
+
+            <Text style={styles.newChatModalText}>
+              Start New Conversation
+            </Text>
+          </TouchableOpacity>
+
+        </View>
+
+      </Modal>
+
     </KeyboardAvoidingView>
   );
 }
 
+// --------------------------------------------------
+// STYLES
+// --------------------------------------------------
+
 const styles = StyleSheet.create({
+
   container: {
     flex: 1,
     backgroundColor: "#fff",
   },
 
   // Header
+
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
     marginTop: 43,
   },
 
   botIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     backgroundColor: "#E8F5E9",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
+    marginRight: 11,
+  },
+
+  headerInfo: {
+    flex: 1,
   },
 
   title: {
-    fontSize: 20,
-    fontWeight: "700",
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#222",
   },
 
   statusContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 3,
+    marginTop: 4,
   },
 
   onlineDot: {
@@ -492,48 +1007,75 @@ const styles = StyleSheet.create({
   },
 
   status: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#4CAF50",
   },
 
-  newChatButton: {
-    padding: 5,
+  headerButton: {
+    width: 37,
+    height: 37,
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 3,
+  },
+
+  conversationTitleContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 9,
+    backgroundColor: "#FAFAFA",
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+
+  conversationTitle: {
+    fontSize: 12,
+    color: "#777",
+    fontWeight: "600",
   },
 
   // Messages
+
   messages: {
     flexGrow: 1,
-    padding: 20,
+    padding: 18,
+    paddingBottom: 15,
     justifyContent: "flex-end",
+  },
+
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   emptyText: {
     textAlign: "center",
     color: "#888",
-    fontSize: 16,
-    marginBottom: 20,
+    fontSize: 14,
   },
 
   messageBubble: {
-    maxWidth: "85%",
+    maxWidth: "87%",
     paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 15,
     borderRadius: 18,
-    marginBottom: 10,
+    marginBottom: 11,
   },
 
   userMessage: {
     alignSelf: "flex-end",
     backgroundColor: "#222",
+    borderBottomRightRadius: 5,
   },
 
   botMessage: {
     alignSelf: "flex-start",
     backgroundColor: "#F1F1F1",
+    borderBottomLeftRadius: 5,
   },
 
   messageText: {
-    fontSize: 16,
+    fontSize: 15,
     lineHeight: 23,
   },
 
@@ -546,6 +1088,7 @@ const styles = StyleSheet.create({
   },
 
   // Loading
+
   loadingBubble: {
     alignSelf: "flex-start",
     flexDirection: "row",
@@ -558,31 +1101,23 @@ const styles = StyleSheet.create({
   },
 
   loadingText: {
-    marginLeft: 8,
+    marginLeft: 9,
     color: "#777",
-    fontSize: 14,
+    fontSize: 13,
   },
 
-  // Error
+  // Errors
+
   errorContainer: {
     flexDirection: "row",
     alignItems: "flex-start",
     backgroundColor: "#FFF5F5",
     borderWidth: 1,
     borderColor: "#FFD6D6",
-    borderRadius: 16,
-    padding: 14,
+    borderRadius: 14,
+    padding: 13,
     marginBottom: 10,
-  },
-
-  errorIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: "#FFE8E8",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
+    gap: 10,
   },
 
   errorContent: {
@@ -590,17 +1125,17 @@ const styles = StyleSheet.create({
   },
 
   errorTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "700",
     color: "#C62828",
     marginBottom: 4,
   },
 
   errorText: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#777",
     lineHeight: 18,
-    marginBottom: 10,
+    marginBottom: 9,
   },
 
   retryButton: {
@@ -620,9 +1155,10 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
-  // Options
+  // Initial options
+
   options: {
-    padding: 20,
+    padding: 18,
     paddingBottom: 30,
     gap: 12,
     borderTopWidth: 1,
@@ -630,26 +1166,56 @@ const styles = StyleSheet.create({
     marginBottom: 100,
   },
 
+  optionsTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#222",
+    marginBottom: 5,
+  },
+
   optionButton: {
     flexDirection: "row",
-    backgroundColor: "#f2f2f2",
-    padding: 16,
-    borderRadius: 12,
+    backgroundColor: "#F8F9F8",
+    padding: 15,
+    borderRadius: 14,
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#EAEDEA",
+  },
+
+  optionIcon: {
+    width: 43,
+    height: 43,
+    borderRadius: 12,
+    backgroundColor: "#E8F5E9",
     justifyContent: "center",
-    gap: 8,
+    alignItems: "center",
+    marginRight: 12,
+  },
+
+  optionContent: {
+    flex: 1,
+  },
+
+  optionText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#222",
+  },
+
+  optionDescription: {
+    fontSize: 12,
+    color: "#888",
+    marginTop: 4,
+    lineHeight: 17,
   },
 
   disabledButton: {
     opacity: 0.5,
   },
 
-  optionText: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-
   // Message input
+
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -682,20 +1248,164 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  clearSessionButton: {
-  width: 40,
-  height: 40,
-  borderRadius: 20,
-  backgroundColor: "#FFF1F1",
-  alignItems: "center",
-  justifyContent: "center",
-  position: "absolute",
-  right: 16,
-  top: 5,
-},
-clearSessionText: {
-  color: "#E53935",
-  fontSize: 11,
-  fontWeight: "700",
-},
+  // History modal
+
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "#fff",
+    paddingTop: Platform.OS === "ios" ? 20 : 15,
+    paddingHorizontal: 18,
+    paddingBottom: 25,
+  },
+
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+
+  modalTitle: {
+    fontSize: 21,
+    fontWeight: "800",
+    color: "#222",
+  },
+
+  modalSubtitle: {
+    fontSize: 12,
+    color: "#888",
+    marginTop: 5,
+  },
+
+  closeButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#F2F2F2",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  historyList: {
+    paddingTop: 12,
+    paddingBottom: 15,
+  },
+
+  historyItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+
+  selectedHistoryItem: {
+    backgroundColor: "#F1F8F1",
+    borderRadius: 12,
+  },
+
+  historyIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: "#E8F5E9",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+
+  historyContent: {
+    flex: 1,
+    marginRight: 8,
+  },
+
+  historyTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#222",
+  },
+
+  historyDetails: {
+    fontSize: 11,
+    color: "#888",
+    marginTop: 5,
+  },
+
+  historyMessageCount: {
+    fontSize: 11,
+    color: "#4CAF50",
+    marginTop: 4,
+  },
+
+  deleteHistoryButton: {
+    padding: 9,
+    marginRight: 3,
+  },
+
+  historyLoading: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 12,
+  },
+
+  historyEmpty: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 35,
+    paddingTop: 100,
+  },
+
+  historyEmptyTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#333",
+    marginTop: 15,
+  },
+
+  historyEmptyText: {
+    fontSize: 13,
+    color: "#999",
+    textAlign: "center",
+    marginTop: 8,
+    lineHeight: 20,
+  },
+
+  deleteAllButton: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 14,
+    gap: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
+  },
+
+  deleteAllText: {
+    color: "#E53935",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+
+  newChatModalButton: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#4CAF50",
+    padding: 15,
+    borderRadius: 13,
+    gap: 8,
+    marginTop: 10,
+  },
+
+  newChatModalText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+
 });
