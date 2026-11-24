@@ -1,4 +1,3 @@
-
 import { Ionicons } from "@expo/vector-icons";
 import * as SecureStore from "expo-secure-store";
 import { useEffect, useRef, useState } from "react";
@@ -43,9 +42,8 @@ export default function Chat() {
 
   const flatListRef = useRef(null);
 
-  // --------------------------------------------------
   // API HELPER
-  // --------------------------------------------------
+
 
   const apiRequest = async (endpoint, options = {}) => {
     const token = await SecureStore.getItemAsync("token");
@@ -72,9 +70,9 @@ export default function Chat() {
     return data;
   };
 
-  // --------------------------------------------------
+
   // MESSAGE HELPERS
-  // --------------------------------------------------
+
 
   const formatMessages = (backendMessages = []) => {
     return backendMessages.map((item, index) => ({
@@ -85,9 +83,9 @@ export default function Chat() {
     }));
   };
 
-  // --------------------------------------------------
+
   // INITIAL GREETING
-  // --------------------------------------------------
+ 
 
   useEffect(() => {
     loadGreeting();
@@ -112,9 +110,9 @@ export default function Chat() {
     }
   };
 
-  // --------------------------------------------------
+
   // SCROLL TO LATEST MESSAGE
-  // --------------------------------------------------
+  
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -128,9 +126,9 @@ export default function Chat() {
     }
   }, [messages, isLoading, error]);
 
-  // --------------------------------------------------
+
   // GET CONVERSATION HISTORY
-  // --------------------------------------------------
+ 
 
   const fetchConversationHistory = async () => {
     try {
@@ -152,9 +150,9 @@ export default function Chat() {
     fetchConversationHistory();
   };
 
-  // --------------------------------------------------
+
   // OPEN EXISTING CONVERSATION
-  // --------------------------------------------------
+
 
   const openConversation = async (selectedChatId) => {
     if (isLoading || isLoadingChat) return;
@@ -164,9 +162,7 @@ export default function Chat() {
       setError(null);
       setHistoryVisible(false);
 
-      const data = await apiRequest(
-        `/history/${selectedChatId}`
-      );
+      const data = await apiRequest(`/history/${selectedChatId}`);
 
       const chat = data.chat;
 
@@ -186,23 +182,17 @@ export default function Chat() {
     }
   };
 
-  // --------------------------------------------------
   // SEND MESSAGE / CREATE CONVERSATION
-  // --------------------------------------------------
 
   const sendMessage = async (
     message,
     selectedPlan = planType,
     existingChatId = chatId,
-    isRetry = false
+    isRetry = false,
   ) => {
     const trimmedMessage = message.trim();
 
-    if (
-      !trimmedMessage ||
-      isLoading ||
-      !selectedPlan
-    ) {
+    if (!trimmedMessage || isLoading || !selectedPlan) {
       return;
     }
 
@@ -222,9 +212,9 @@ export default function Chat() {
     }
 
     try {
-      // IMPORTANT:
+  
       // The backend retrieves conversation history
-      // using chatId. We no longer send history.
+      // using chatId
 
       const data = await apiRequest("/chat", {
         method: "POST",
@@ -247,7 +237,6 @@ export default function Chat() {
 
       // Refresh sidebar/history data
       fetchConversationHistory();
-
     } catch (err) {
       console.error("Chat error:", err);
 
@@ -259,15 +248,14 @@ export default function Chat() {
         planType: selectedPlan,
         chatId: existingChatId,
       });
-
     } finally {
       setIsLoading(false);
     }
   };
 
-  // --------------------------------------------------
+
   // SELECT WORKOUT OR MEAL PLAN
-  // --------------------------------------------------
+
 
   const selectPlan = (selectedPlan) => {
     if (isLoading) return;
@@ -281,16 +269,14 @@ export default function Chat() {
     setError(null);
 
     const initialMessage =
-      selectedPlan === "workout"
-        ? "Build Workout Plan"
-        : "Build Meal Plan";
+      selectedPlan === "workout" ? "Build Workout Plan" : "Build Meal Plan";
 
     sendMessage(initialMessage, selectedPlan, null);
   };
 
-  // --------------------------------------------------
+
   // SEND FOLLOW-UP MESSAGE
-  // --------------------------------------------------
+
 
   const handleSend = () => {
     const message = inputMessage.trim();
@@ -304,9 +290,9 @@ export default function Chat() {
     sendMessage(message);
   };
 
-  // --------------------------------------------------
+
   // RETRY FAILED MESSAGE
-  // --------------------------------------------------
+
 
   const retryMessage = () => {
     if (!pendingMessage || isLoading) return;
@@ -317,17 +303,12 @@ export default function Chat() {
       chatId: failedChatId,
     } = pendingMessage;
 
-    sendMessage(
-      message,
-      selectedPlan,
-      failedChatId,
-      true
-    );
+    sendMessage(message, selectedPlan, failedChatId, true);
   };
 
-  // --------------------------------------------------
+
   // START NEW CONVERSATION
-  // --------------------------------------------------
+
 
   const startNewChat = () => {
     if (isLoading || isLoadingChat) return;
@@ -344,9 +325,9 @@ export default function Chat() {
     loadGreeting();
   };
 
-  // --------------------------------------------------
+ 
   // DELETE INDIVIDUAL CONVERSATION
-  // --------------------------------------------------
+
 
   const deleteConversation = (selectedChatId) => {
     Alert.alert(
@@ -367,28 +348,24 @@ export default function Chat() {
               });
 
               setConversationHistory((prev) =>
-                prev.filter(
-                  (chat) => chat._id !== selectedChatId
-                )
+                prev.filter((chat) => chat._id !== selectedChatId),
               );
 
               // If deleting the currently open chat
               if (chatId === selectedChatId) {
                 startNewChat();
               }
-
             } catch (err) {
               Alert.alert("Error", err.message);
             }
           },
         },
-      ]
+      ],
     );
   };
 
-  // --------------------------------------------------
+
   // DELETE ALL CONVERSATIONS
-  // --------------------------------------------------
 
   const deleteAllConversations = () => {
     if (conversationHistory.length === 0) return;
@@ -415,19 +392,17 @@ export default function Chat() {
               startNewChat();
 
               setHistoryVisible(false);
-
             } catch (err) {
               Alert.alert("Error", err.message);
             }
           },
         },
-      ]
+      ],
     );
   };
 
-  // --------------------------------------------------
+
   // FORMAT HISTORY DATE
-  // --------------------------------------------------
 
   const formatDate = (date) => {
     if (!date) return "";
@@ -441,9 +416,9 @@ export default function Chat() {
     });
   };
 
-  // --------------------------------------------------
+ 
   // RENDER MESSAGE
-  // --------------------------------------------------
+ 
 
   const renderMessage = ({ item }) => {
     const isBot = item.sender === "bot";
@@ -458,9 +433,7 @@ export default function Chat() {
         <Text
           style={[
             styles.messageText,
-            isBot
-              ? styles.botMessageText
-              : styles.userMessageText,
+            isBot ? styles.botMessageText : styles.userMessageText,
           ]}
         >
           {item.text}
@@ -469,38 +442,27 @@ export default function Chat() {
     );
   };
 
-  // --------------------------------------------------
+
   // MAIN UI
-  // --------------------------------------------------
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-
       {/* HEADER */}
 
       <View style={styles.header}>
-
         <View style={styles.botIcon}>
-          <Ionicons
-            name="fitness"
-            size={26}
-            color="#4CAF50"
-          />
+          <Ionicons name="fitness" size={26} color="#4CAF50" />
         </View>
 
         <View style={styles.headerInfo}>
-          <Text style={styles.title}>
-            FITNESS ASSISTANT
-          </Text>
+          <Text style={styles.title}>FITNESS ASSISTANT</Text>
 
           <View style={styles.statusContainer}>
             <View style={styles.onlineDot} />
-            <Text style={styles.status}>
-              AI Assistant
-            </Text>
+            <Text style={styles.status}>AI Assistant</Text>
           </View>
         </View>
 
@@ -509,11 +471,7 @@ export default function Chat() {
           onPress={openHistory}
           disabled={isLoading || isLoadingChat}
         >
-          <Ionicons
-            name="time-outline"
-            size={23}
-            color="#333"
-          />
+          <Ionicons name="time-outline" size={23} color="#333" />
         </TouchableOpacity>
 
         {planType && (
@@ -522,11 +480,7 @@ export default function Chat() {
             onPress={startNewChat}
             disabled={isLoading || isLoadingChat}
           >
-            <Ionicons
-              name="add-circle-outline"
-              size={25}
-              color="#4CAF50"
-            />
+            <Ionicons name="add-circle-outline" size={25} color="#4CAF50" />
           </TouchableOpacity>
         )}
 
@@ -536,24 +490,16 @@ export default function Chat() {
             onPress={() => deleteConversation(chatId)}
             disabled={isLoading}
           >
-            <Ionicons
-              name="trash-outline"
-              size={21}
-              color="#E53935"
-            />
+            <Ionicons name="trash-outline" size={21} color="#E53935" />
           </TouchableOpacity>
         )}
-
       </View>
 
       {/* CURRENT CONVERSATION TITLE */}
 
       {chatTitle !== "" && (
         <View style={styles.conversationTitleContainer}>
-          <Text
-            style={styles.conversationTitle}
-            numberOfLines={1}
-          >
+          <Text style={styles.conversationTitle} numberOfLines={1}>
             {chatTitle}
           </Text>
         </View>
@@ -572,10 +518,7 @@ export default function Chat() {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             {isLoadingChat ? (
-              <ActivityIndicator
-                size="large"
-                color="#4CAF50"
-              />
+              <ActivityIndicator size="large" color="#4CAF50" />
             ) : (
               <Text style={styles.emptyText}>
                 {error || "Loading your assistant..."}
@@ -589,14 +532,9 @@ export default function Chat() {
 
             {isLoading && (
               <View style={styles.loadingBubble}>
-                <ActivityIndicator
-                  size="small"
-                  color="#4CAF50"
-                />
+                <ActivityIndicator size="small" color="#4CAF50" />
 
-                <Text style={styles.loadingText}>
-                  Assistant is thinking...
-                </Text>
+                <Text style={styles.loadingText}>Assistant is thinking...</Text>
               </View>
             )}
 
@@ -604,7 +542,6 @@ export default function Chat() {
 
             {error && !isLoading && (
               <View style={styles.errorContainer}>
-
                 <Ionicons
                   name="cloud-offline-outline"
                   size={25}
@@ -612,32 +549,21 @@ export default function Chat() {
                 />
 
                 <View style={styles.errorContent}>
-                  <Text style={styles.errorTitle}>
-                    Unable to send message
-                  </Text>
+                  <Text style={styles.errorTitle}>Unable to send message</Text>
 
-                  <Text style={styles.errorText}>
-                    {error}
-                  </Text>
+                  <Text style={styles.errorText}>{error}</Text>
 
                   {pendingMessage && (
                     <TouchableOpacity
                       style={styles.retryButton}
                       onPress={retryMessage}
                     >
-                      <Ionicons
-                        name="refresh"
-                        size={16}
-                        color="#fff"
-                      />
+                      <Ionicons name="refresh" size={16} color="#fff" />
 
-                      <Text style={styles.retryText}>
-                        Retry
-                      </Text>
+                      <Text style={styles.retryText}>Retry</Text>
                     </TouchableOpacity>
                   )}
                 </View>
-
               </View>
             )}
           </>
@@ -648,77 +574,49 @@ export default function Chat() {
 
       {!planType && (
         <View style={styles.options}>
-
           <Text style={styles.optionsTitle}>
             What would you like help with?
           </Text>
 
           <TouchableOpacity
-            style={[
-              styles.optionButton,
-              isLoading && styles.disabledButton,
-            ]}
+            style={[styles.optionButton, isLoading && styles.disabledButton]}
             disabled={isLoading}
             onPress={() => selectPlan("workout")}
           >
             <View style={styles.optionIcon}>
-              <Ionicons
-                name="barbell-outline"
-                size={23}
-                color="#4CAF50"
-              />
+              <Ionicons name="barbell-outline" size={23} color="#4CAF50" />
             </View>
 
             <View style={styles.optionContent}>
-              <Text style={styles.optionText}>
-                Build Workout Plan
-              </Text>
+              <Text style={styles.optionText}>Build Workout Plan</Text>
 
               <Text style={styles.optionDescription}>
                 Get a workout plan based on your fitness goals.
               </Text>
             </View>
 
-            <Ionicons
-              name="chevron-forward"
-              size={20}
-              color="#888"
-            />
+            <Ionicons name="chevron-forward" size={20} color="#888" />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[
-              styles.optionButton,
-              isLoading && styles.disabledButton,
-            ]}
+            style={[styles.optionButton, isLoading && styles.disabledButton]}
             disabled={isLoading}
             onPress={() => selectPlan("meal")}
           >
             <View style={styles.optionIcon}>
-              <Ionicons
-                name="restaurant-outline"
-                size={23}
-                color="#4CAF50"
-              />
+              <Ionicons name="restaurant-outline" size={23} color="#4CAF50" />
             </View>
 
             <View style={styles.optionContent}>
-              <Text style={styles.optionText}>
-                Build Meal Plan
-              </Text>
+              <Text style={styles.optionText}>Build Meal Plan</Text>
 
               <Text style={styles.optionDescription}>
                 Get meal recommendations for your goals.
               </Text>
             </View>
 
-            <Ionicons
-              name="chevron-forward"
-              size={20}
-              color="#888"
-            />
+            <Ionicons name="chevron-forward" size={20} color="#888" />
           </TouchableOpacity>
-
         </View>
       )}
 
@@ -726,7 +624,6 @@ export default function Chat() {
 
       {planType && (
         <View style={styles.inputContainer}>
-
           <TextInput
             style={styles.textInput}
             placeholder="Ask something..."
@@ -741,21 +638,13 @@ export default function Chat() {
           <TouchableOpacity
             style={[
               styles.sendButton,
-              (!inputMessage.trim() || isLoading) &&
-                styles.disabledButton,
+              (!inputMessage.trim() || isLoading) && styles.disabledButton,
             ]}
-            disabled={
-              !inputMessage.trim() || isLoading
-            }
+            disabled={!inputMessage.trim() || isLoading}
             onPress={handleSend}
           >
-            <Ionicons
-              name="send"
-              size={19}
-              color="#fff"
-            />
+            <Ionicons name="send" size={19} color="#fff" />
           </TouchableOpacity>
-
         </View>
       )}
 
@@ -767,17 +656,12 @@ export default function Chat() {
         presentationStyle="pageSheet"
         onRequestClose={() => setHistoryVisible(false)}
       >
-
         <View style={styles.modalContainer}>
-
           {/* MODAL HEADER */}
 
           <View style={styles.modalHeader}>
-
             <View>
-              <Text style={styles.modalTitle}>
-                Your Conversations
-              </Text>
+              <Text style={styles.modalTitle}>Your Conversations</Text>
 
               <Text style={styles.modalSubtitle}>
                 Access your previous AI conversations
@@ -788,23 +672,15 @@ export default function Chat() {
               style={styles.closeButton}
               onPress={() => setHistoryVisible(false)}
             >
-              <Ionicons
-                name="close"
-                size={23}
-                color="#333"
-              />
+              <Ionicons name="close" size={23} color="#333" />
             </TouchableOpacity>
-
           </View>
 
           {/* HISTORY LIST */}
 
           {isLoadingHistory ? (
             <View style={styles.historyLoading}>
-              <ActivityIndicator
-                size="large"
-                color="#4CAF50"
-              />
+              <ActivityIndicator size="large" color="#4CAF50" />
 
               <Text style={styles.historyEmptyText}>
                 Loading conversations...
@@ -818,11 +694,7 @@ export default function Chat() {
               showsVerticalScrollIndicator={false}
               ListEmptyComponent={
                 <View style={styles.historyEmpty}>
-                  <Ionicons
-                    name="chatbubbles-outline"
-                    size={45}
-                    color="#bbb"
-                  />
+                  <Ionicons name="chatbubbles-outline" size={45} color="#bbb" />
 
                   <Text style={styles.historyEmptyTitle}>
                     No conversations yet
@@ -837,12 +709,10 @@ export default function Chat() {
                 <Pressable
                   style={[
                     styles.historyItem,
-                    chatId === item._id &&
-                      styles.selectedHistoryItem,
+                    chatId === item._id && styles.selectedHistoryItem,
                   ]}
                   onPress={() => openConversation(item._id)}
                 >
-
                   <View style={styles.historyIcon}>
                     <Ionicons
                       name={
@@ -856,11 +726,7 @@ export default function Chat() {
                   </View>
 
                   <View style={styles.historyContent}>
-
-                    <Text
-                      style={styles.historyTitle}
-                      numberOfLines={1}
-                    >
+                    <Text style={styles.historyTitle} numberOfLines={1}>
                       {item.title}
                     </Text>
 
@@ -875,28 +741,16 @@ export default function Chat() {
                     <Text style={styles.historyMessageCount}>
                       {item.messages?.length || 0} messages
                     </Text>
-
                   </View>
 
                   <TouchableOpacity
                     style={styles.deleteHistoryButton}
-                    onPress={() =>
-                      deleteConversation(item._id)
-                    }
+                    onPress={() => deleteConversation(item._id)}
                   >
-                    <Ionicons
-                      name="trash-outline"
-                      size={19}
-                      color="#E53935"
-                    />
+                    <Ionicons name="trash-outline" size={19} color="#E53935" />
                   </TouchableOpacity>
 
-                  <Ionicons
-                    name="chevron-forward"
-                    size={18}
-                    color="#aaa"
-                  />
-
+                  <Ionicons name="chevron-forward" size={18} color="#aaa" />
                 </Pressable>
               )}
             />
@@ -909,15 +763,9 @@ export default function Chat() {
               style={styles.deleteAllButton}
               onPress={deleteAllConversations}
             >
-              <Ionicons
-                name="trash-outline"
-                size={18}
-                color="#E53935"
-              />
+              <Ionicons name="trash-outline" size={18} color="#E53935" />
 
-              <Text style={styles.deleteAllText}>
-                Delete all conversations
-              </Text>
+              <Text style={styles.deleteAllText}>Delete all conversations</Text>
             </TouchableOpacity>
           )}
 
@@ -930,21 +778,12 @@ export default function Chat() {
               startNewChat();
             }}
           >
-            <Ionicons
-              name="add"
-              size={21}
-              color="#fff"
-            />
+            <Ionicons name="add" size={21} color="#fff" />
 
-            <Text style={styles.newChatModalText}>
-              Start New Conversation
-            </Text>
+            <Text style={styles.newChatModalText}>Start New Conversation</Text>
           </TouchableOpacity>
-
         </View>
-
       </Modal>
-
     </KeyboardAvoidingView>
   );
 }
@@ -954,7 +793,6 @@ export default function Chat() {
 // --------------------------------------------------
 
 const styles = StyleSheet.create({
-
   container: {
     flex: 1,
     backgroundColor: "#fff",
@@ -1407,5 +1245,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
   },
-
 });
