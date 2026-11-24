@@ -564,7 +564,7 @@ const selectFood = async () => {
               height={220}
               yAxisLabel=""
               yAxisSuffix=""
-              showValuesOnTopOfBars={false}
+              showValuesOnTopOfBars={true}
               fromZero
               chartConfig={{
                 backgroundGradientFrom: "#FFFFFF",
